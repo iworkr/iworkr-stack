@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -41,8 +40,6 @@ class _ProposalStudioScreenState extends State<ProposalStudioScreen> {
   int? _selectedOption;
   String? _signedByName;
   List<dynamic> _availableKits = [];
-  bool _loadingKits = false;
-  String _searchQuery = '';
 
   @override
   void initState() {
@@ -51,7 +48,6 @@ class _ProposalStudioScreenState extends State<ProposalStudioScreen> {
   }
 
   Future<void> _loadKits() async {
-    setState(() => _loadingKits = true);
     try {
       final supabase = Supabase.instance.client;
       final orgId = supabase.auth.currentUser?.userMetadata?['organization_id'];
@@ -66,10 +62,8 @@ class _ProposalStudioScreenState extends State<ProposalStudioScreen> {
 
       setState(() {
         _availableKits = data as List<dynamic>;
-        _loadingKits = false;
       });
     } catch (e) {
-      setState(() => _loadingKits = false);
       debugPrint('Error loading kits: $e');
     }
   }
@@ -124,21 +118,22 @@ class _ProposalStudioScreenState extends State<ProposalStudioScreen> {
       if (orgId == null) return;
 
       // Build options JSONB
-      final optionsJson = _options.map((opt) => {
-        return {
-          'label': opt.label,
-          'kits': opt.kits.map((k) => k.toJson()).toList(),
-          'total_cost': _calculateOptionCost(opt),
-          'total_price': _calculateOptionTotal(opt),
-        };
-      }).toList();
+      final optionsJson = _options
+          .map<Map<String, dynamic>>((opt) => <String, dynamic>{
+                'label': opt.label,
+                'kits': opt.kits.map((k) => k.toJson()).toList(),
+                'total_cost': _calculateOptionCost(opt),
+                'total_price': _calculateOptionTotal(opt),
+              })
+          .toList();
 
       // Call win_proposal RPC
-      final result = await supabase.rpc('win_proposal', params: {
+      await supabase.rpc('win_proposal', params: {
         'p_proposal_id': null, // Will create inline
         'p_selected_option': _selectedOption,
         'p_signature_data': null, // Signature canvas data would go here
         'p_signed_by': _signedByName,
+        'p_options': optionsJson,
       });
 
       if (mounted) {
@@ -348,7 +343,7 @@ class _EditorView extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                PhosphorIconsLight.package_,
+                                PhosphorIconsLight.package,
                                 size: 40,
                                 color: Colors.white.withOpacity(0.15),
                               ),

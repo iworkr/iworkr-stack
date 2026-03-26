@@ -559,6 +559,7 @@ function SystemLink({
   onClick,
   href,
   active,
+  testId,
 }: {
   label: string;
   icon: React.ElementType;
@@ -566,6 +567,7 @@ function SystemLink({
   onClick?: () => void;
   href?: string;
   active?: boolean;
+  testId?: string;
 }) {
   const cls = `flex w-full items-center gap-2.5 rounded-md px-2 py-[6px] text-[13px] transition-all duration-100 ${
     collapsed ? "justify-center" : ""
@@ -582,8 +584,26 @@ function SystemLink({
     </>
   );
 
-  if (onClick) return <button title={collapsed ? label : undefined} className={cls} onClick={onClick}>{content}</button>;
-  if (href) return <Link title={collapsed ? label : undefined} href={href} className={cls}>{content}</Link>;
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        data-testid={testId}
+        title={collapsed ? label : undefined}
+        className={cls}
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    );
+  }
+  if (href) {
+    return (
+      <Link data-testid={testId} title={collapsed ? label : undefined} href={href} className={cls}>
+        {content}
+      </Link>
+    );
+  }
   return null;
 }
 
@@ -591,6 +611,7 @@ function SystemLink({
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, setMobileSidebarOpen } = useShellStore();
   const { setInviteModalOpen } = useTeamStore();
   const onboardingName = useOnboardingStore((s) => s.companyName);
@@ -634,6 +655,17 @@ export function Sidebar() {
     },
     [pathname],
   );
+
+  const handleInviteTeamClick = useCallback(() => {
+    // TEAM-INVITE-02: ensure deterministic visible response
+    // 1) open modal immediately
+    // 2) route to team area so users always land in team context
+    const teamPath = isCare ? "/dashboard/workforce/team" : "/dashboard/team";
+    setInviteModalOpen(true);
+    if (!pathname.startsWith(teamPath)) {
+      router.push(`${teamPath}?invite=true`);
+    }
+  }, [isCare, pathname, router, setInviteModalOpen]);
 
   useEffect(() => { setMobileSidebarOpen(false); }, [pathname, setMobileSidebarOpen]);
 
@@ -762,7 +794,13 @@ export function Sidebar() {
           <div className="space-y-[1px]">
             <SystemLink label="Get App" icon={Smartphone} collapsed={sidebarCollapsed} href="/dashboard/get-app" active={pathname.startsWith("/dashboard/get-app")} />
             {roleDef?.scopes.canManageTeam && (
-              <SystemLink label="Invite Team" icon={UserPlus} collapsed={sidebarCollapsed} onClick={() => setInviteModalOpen(true)} />
+              <SystemLink
+                label="Invite Team"
+                icon={UserPlus}
+                collapsed={sidebarCollapsed}
+                onClick={handleInviteTeamClick}
+                testId="sidebar-invite-team"
+              />
             )}
             <SystemLink label="Settings" icon={Settings} collapsed={sidebarCollapsed} href="/settings" active={pathname.startsWith("/settings")} />
           </div>

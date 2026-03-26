@@ -25,11 +25,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTeamStore } from "@/lib/team-store";
 import { type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useAuthStore } from "@/lib/auth-store";
+import { getBranches, type Branch } from "@/app/actions/branches";
 
 /* ── Role Card Config ────────────────────────────────────── */
 
@@ -66,6 +68,10 @@ const careRoleCards: Record<string, RoleCardStyle> = {
 
 const INVITABLE_ROLES: RoleId[] = ["admin", "manager", "office_admin", "senior_tech", "technician", "apprentice", "subcontractor"];
 
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
 export function InviteModal() {
   const { inviteModalOpen, setInviteModalOpen, refresh: refreshTeamStore } = useTeamStore();
   const { addToast } = useToastStore();
@@ -75,43 +81,60 @@ export function InviteModal() {
   const currentOrg = useAuthStore((s) => s.currentOrg);
   const orgId = currentOrg?.id ?? null;
 
-  // Load branches from org settings (not hardcoded)
-  const orgBranches = useMemo(() => {
-    const settings = (currentOrg as any)?.settings;
-    if (settings && Array.isArray(settings.branches) && settings.branches.length > 0) {
-      return settings.branches as string[];
-    }
-    return null; // null = no branches configured
-  }, [currentOrg]);
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ["invite-modal-branches", orgId],
+    enabled: Boolean(orgId),
+    queryFn: async () => {
+      const result = await getBranches(orgId!);
+      return result.data || [];
+    },
+  });
 
   const roleCards = isCare ? careRoleCards : tradesRoleCards;
 
   const [emails, setEmails] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [selectedRole, setSelectedRole] = useState<RoleId>("technician");
-  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (inviteModalOpen) {
+    if (!inviteModalOpen) return;
+    const frame = requestAnimationFrame(() => {
       setEmails([]);
       setInputValue("");
       setSelectedRole("technician");
-      setSelectedBranches(orgBranches ? [orgBranches[0]] : []);
+      setSelectedBranchId(branches[0]?.id || null);
       setSending(false);
       setSent(false);
-    }
-  }, [inviteModalOpen, orgBranches]);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [inviteModalOpen, branches]);
 
   const addEmail = useCallback(
     (raw: string) => {
-      const parts = raw.split(/[,;\s]+/).filter((e) => e.includes("@") && !emails.includes(e));
-      if (parts.length > 0) setEmails((prev) => [...prev, ...parts]);
+      const parts = raw
+        .split(/[,;\s]+/)
+        .map((e) => e.trim())
+        .filter((e) => isValidEmail(e));
+      if (parts.length > 0) {
+        setEmails((prev) => {
+          const next = [...prev];
+          parts.forEach((part) => {
+            if (!next.includes(part)) next.push(part);
+          });
+          return next;
+        });
+      }
     },
-    [emails]
+    []
   );
+
+  const pendingInput = inputValue.trim();
+  const hasPendingValidEmail = isValidEmail(pendingInput) && !emails.includes(pendingInput);
+  const hasInvitesReady = emails.length > 0 || hasPendingValidEmail;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.key === "Enter" || e.key === "," || e.key === " ") && inputValue.trim()) {
@@ -134,14 +157,28 @@ export function InviteModal() {
     setEmails((prev) => prev.filter((e) => e !== email));
   };
 
-  const toggleBranch = (branch: string) => {
-    setSelectedBranches((prev) =>
-      prev.includes(branch) ? prev.filter((b) => b !== branch) : [...prev, branch]
-    );
-  };
+  const branchNameById = useMemo(
+    () => new Map(branches.map((branch) => [branch.id, branch.name])),
+    [branches]
+  );
 
   const handleSend = async () => {
-    if (emails.length === 0) return;
+    const pendingParts = inputValue
+      .split(/[,;\s]+/)
+      .map((e) => e.trim())
+      .filter((e) => isValidEmail(e));
+
+    const resolvedEmails = [...emails];
+    pendingParts.forEach((part) => {
+      if (!resolvedEmails.includes(part)) resolvedEmails.push(part);
+    });
+
+    if (resolvedEmails.length === 0) return;
+
+    if (pendingParts.length > 0) {
+      setEmails(resolvedEmails);
+      setInputValue("");
+    }
 
     setSending(true);
 
@@ -150,7 +187,7 @@ export function InviteModal() {
 
     // Use fetch() to API route — completely bypasses server action caching.
     // The API route resolves orgId server-side from the authenticated user.
-    for (const email of emails) {
+    for (const email of resolvedEmails) {
       try {
         const res = await fetch("/api/team/invite", {
           method: "POST",
@@ -158,7 +195,8 @@ export function InviteModal() {
           body: JSON.stringify({
             email,
             role: selectedRole,
-            branch: selectedBranches[0] || "HQ",
+            branch: selectedBranchId ? branchNameById.get(selectedBranchId) || undefined : undefined,
+            branch_id: selectedBranchId,
             orgId,
           }),
         });
@@ -268,6 +306,11 @@ export function InviteModal() {
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onPaste={handlePaste}
+                    onBlur={() => {
+                      if (!inputValue.trim()) return;
+                      addEmail(inputValue.trim());
+                      setInputValue("");
+                    }}
                     placeholder={emails.length === 0 ? "name@company.com (comma separated)" : "Add more…"}
                     className="min-w-[120px] flex-1 bg-transparent text-[12px] text-zinc-300 placeholder-zinc-700 outline-none"
                     autoFocus
@@ -321,19 +364,19 @@ export function InviteModal() {
                 )}
               </div>
 
-              {/* Branch / Location — only show if org has branches configured */}
-              {orgBranches && orgBranches.length > 0 && (
+              {/* Branch / Location — single authoritative branch assignment */}
+              {branches.length > 0 && (
                 <div>
                   <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-zinc-600">
                     {isCare ? "Service Region" : "Branch"}
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {orgBranches.map((branch) => {
-                      const isSelected = selectedBranches.includes(branch);
+                    {branches.map((branch) => {
+                      const isSelected = selectedBranchId === branch.id;
                       return (
                         <button
-                          key={branch}
-                          onClick={() => toggleBranch(branch)}
+                          key={branch.id}
+                          onClick={() => setSelectedBranchId(branch.id)}
                           className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-[11px] font-medium transition-all ${
                             isSelected
                               ? "border-white/20 bg-white/10 text-white"
@@ -345,7 +388,7 @@ export function InviteModal() {
                           }`}>
                             {isSelected && <Check size={8} className="text-black" />}
                           </div>
-                          {branch}
+                          {branch.name}
                         </button>
                       );
                     })}
@@ -357,16 +400,18 @@ export function InviteModal() {
             {/* Footer */}
             <div className="flex items-center justify-between gap-4 px-6 py-4">
               <p className="text-[11px] text-zinc-500">
-                {emails.length > 0 ? `${emails.length} invite${emails.length > 1 ? "s" : ""} ready` : "Paste or type email addresses"}
+                {hasInvitesReady
+                  ? `${emails.length + (hasPendingValidEmail ? 1 : 0)} invite${emails.length + (hasPendingValidEmail ? 1 : 0) > 1 ? "s" : ""} ready`
+                  : "Paste or type email addresses"}
               </p>
 
               <button
                 onClick={handleSend}
-                disabled={emails.length === 0 || sending || sent}
+                disabled={!hasInvitesReady || sending || sent}
                 className={`flex items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-all ${
                   sent
                     ? "bg-white text-black"
-                    : emails.length === 0
+                    : !hasInvitesReady
                     ? "cursor-not-allowed bg-zinc-800 text-zinc-600"
                     : "bg-white text-black hover:bg-zinc-200"
                 } disabled:opacity-50`}

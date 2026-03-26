@@ -134,6 +134,16 @@ class TeamState {
   }
 }
 
+class TeamOperationResult {
+  final bool success;
+  final String? error;
+
+  const TeamOperationResult({required this.success, this.error});
+
+  const TeamOperationResult.ok() : success = true, error = null;
+  const TeamOperationResult.fail(this.error) : success = false;
+}
+
 // ── Team Notifier ────────────────────────────────────────
 
 class TeamNotifier extends StateNotifier<TeamState> {
@@ -291,25 +301,38 @@ class TeamNotifier extends StateNotifier<TeamState> {
     }
   }
 
-  Future<bool> inviteMember({
+  Future<TeamOperationResult> inviteMember({
     required String email,
     required String fullName,
     required String role,
+    String? branchId,
   }) async {
     final orgId = _orgId;
-    if (orgId == null) return false;
+    if (orgId == null) {
+      return const TeamOperationResult.fail('No active workspace selected.');
+    }
 
     try {
-      await SupabaseService.client.from('workspace_invites').insert({
+      await SupabaseService.client.from('organization_invites').insert({
         'organization_id': orgId,
         'email': email.trim().toLowerCase(),
         'full_name': fullName.trim(),
         'role': role,
+        'branch_id': branchId,
         'invited_by': SupabaseService.auth.currentUser?.id,
       });
-      return true;
-    } catch (_) {
-      return false;
+      return const TeamOperationResult.ok();
+    } catch (e, st) {
+      debugPrint('[TeamNotifier] Invite error: $e');
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: e,
+          stack: st,
+          library: 'team_provider',
+          context: ErrorDescription('inviteMember'),
+        ),
+      );
+      return TeamOperationResult.fail('Failed to invite member: $e');
     }
   }
 

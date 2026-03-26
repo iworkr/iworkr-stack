@@ -368,7 +368,7 @@ export function OnboardingWizard({
       } else {
         setStep("success");
         // Redirect to dashboard after animation
-        setTimeout(() => router.push(getDashboardPath()), 2500);
+        setTimeout(() => router.replace(getDashboardPath()), 2500);
       }
     } catch (err) {
       setError((err as Error).message);

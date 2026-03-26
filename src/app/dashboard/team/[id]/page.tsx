@@ -268,7 +268,7 @@ export default function StaffProfilePage() {
     return (
       <div className="min-h-screen bg-[var(--background)] p-6 space-y-4">
         <div className="h-8 w-48 rounded bg-white/5 animate-pulse" />
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-4 pb-8">
           <BentoSkeleton className="col-span-4" />
           <BentoSkeleton className="col-span-8" />
           <BentoSkeleton className="col-span-12" />
@@ -340,7 +340,7 @@ export default function StaffProfilePage() {
         </div>
 
         {/* ── Bento Grid ── */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-4 pb-8">
 
           {/* ── Box 1: Identity & Status (col-span-4) ── */}
           <motion.div

@@ -34,6 +34,22 @@ const UpdateFormSchema = z.object({
   settings: z.record(z.string(), z.unknown()).optional(),
 });
 
+const CreateFormTemplateDraftSchema = z.object({
+  workspace_id: uuidSchema,
+  title: z.string().min(1, "Title is required").max(200).default("Untitled Form"),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+  schema_jsonb: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+
+const UpdateFormTemplateDraftSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  status: z.string().max(50).optional(),
+  category: z.string().max(100).optional(),
+  schema_jsonb: z.array(z.record(z.string(), z.unknown())).optional(),
+});
+
 /* ── Types ─────────────────────────────────────────── */
 
 export interface FormsOverview {
@@ -45,7 +61,215 @@ export interface FormsOverview {
   expired_submissions: number;
 }
 
+export interface GlobalFormTemplate {
+  id: string;
+  title: string;
+  description: string;
+  sector: "TRADES" | "CARE" | "ALL";
+  category: "SAFETY" | "COMPLIANCE" | "CLINICAL" | "INSPECTION";
+  schema_jsonb: Record<string, unknown>[];
+  is_premium: boolean;
+  clone_count: number;
+  created_at: string;
+}
+
+function mapTemplateToLegacyForm(template: Record<string, any>) {
+  return {
+    ...template,
+    organization_id: template.workspace_id,
+    blocks: template.schema_jsonb ?? [],
+  };
+}
+
 /* ── Forms CRUD ────────────────────────────────────── */
+
+export async function createFormTemplateDraft(params: {
+  workspace_id: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  schema_jsonb?: any[];
+}) {
+  try {
+    const validated = validate(CreateFormTemplateDraftSchema, {
+      ...params,
+      title: params.title ?? "Untitled Form",
+    });
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.workspace_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
+      .insert({
+        workspace_id: params.workspace_id,
+        title: params.title ?? "Untitled Form",
+        description: params.description ?? "",
+        category: params.category ?? "custom",
+        status: "draft",
+        schema_jsonb: params.schema_jsonb ?? [],
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/forms");
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function getFormTemplateById(templateId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
+      .select("*")
+      .eq("id", templateId)
+      .maybeSingle();
+
+    if (error) return { data: null, error: error.message };
+    if (!data) return { data: null, error: "Form template not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", data.workspace_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const mapped = data?.forms
+      ? {
+          ...data,
+          forms: {
+            ...data.forms,
+            blocks: (data.forms as any).schema_jsonb ?? [],
+          },
+        }
+      : data;
+
+    return { data: mapped, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function updateFormTemplateDraft(
+  templateId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    status?: string;
+    category?: string;
+    schema_jsonb?: any[];
+  }
+) {
+  try {
+    const validated = validate(UpdateFormTemplateDraftSchema, updates);
+    if (validated.error) return { data: null, error: validated.error };
+
+    const supabase = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: template } = await (supabase as any)
+      .from("form_templates")
+      .select("workspace_id")
+      .eq("id", templateId)
+      .maybeSingle();
+    if (!template) return { data: null, error: "Form template not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", template.workspace_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
+      .update(updates)
+      .eq("id", templateId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/forms");
+    return { data, error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function publishFormTemplate(templateId: string) {
+  try {
+    const supabase = await createServerSupabaseClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: template } = await (supabase as any)
+      .from("form_templates")
+      .select("workspace_id, schema_jsonb")
+      .eq("id", templateId)
+      .maybeSingle();
+    if (!template) return { data: null, error: "Form template not found" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", template.workspace_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    if (!Array.isArray(template.schema_jsonb) || template.schema_jsonb.length === 0) {
+      return { data: null, error: "Add at least one field before publishing." };
+    }
+
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
+      .update({ status: "published" })
+      .eq("id", templateId)
+      .select()
+      .single();
+
+    if (error) return { data: null, error: error.message };
+    revalidatePath("/dashboard/forms");
+    return { data, error: null };
+  } catch (err: any) {
+    logger.error("publishFormTemplate exception", err.message);
+    return { data: null, error: err.message };
+  }
+}
 
 export async function getForms(orgId: string) {
   try {
@@ -62,15 +286,15 @@ export async function getForms(orgId: string) {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    const { data, error } = await supabase
-      .from("forms")
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
       .select("*")
-      .eq("organization_id", orgId)
+      .eq("workspace_id", orgId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) return { data: null, error: error.message };
-    return { data, error: null };
+    return { data: (data || []).map(mapTemplateToLegacyForm), error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
   }
@@ -83,8 +307,8 @@ export async function getForm(formId: string) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: "Unauthorized" };
 
-    const { data, error } = await supabase
-      .from("forms")
+    const { data, error } = await (supabase as any)
+      .from("form_templates")
       .select("*")
       .eq("id", formId)
       .maybeSingle();
@@ -95,12 +319,12 @@ export async function getForm(formId: string) {
     const { data: membership } = await supabase
       .from("organization_members")
       .select("user_id")
-      .eq("organization_id", data.organization_id)
+      .eq("organization_id", data.workspace_id)
       .eq("user_id", user.id)
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
-    return { data, error: null };
+    return { data: mapTemplateToLegacyForm(data), error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
   }
@@ -114,38 +338,17 @@ export async function createForm(params: {
   blocks?: any[];
 }) {
   try {
-    // Validate input
     const validated = validate(CreateFormSchema, params);
     if (validated.error) return { data: null, error: validated.error };
-
-    const supabase = await createServerSupabaseClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", params.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase
-      .from("forms")
-      .insert({
-        ...params,
-        created_by: user?.id,
-        status: "draft",
-      })
-      .select()
-      .single();
-
-    if (error) return { data: null, error: error.message };
-    revalidatePath("/dashboard/forms");
-    return { data, error: null };
+    const result = await createFormTemplateDraft({
+      workspace_id: params.organization_id,
+      title: params.title,
+      description: params.description,
+      category: params.category,
+      schema_jsonb: params.blocks,
+    });
+    if (result.error || !result.data) return { data: null, error: result.error };
+    return { data: mapTemplateToLegacyForm(result.data), error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
   }
@@ -164,40 +367,17 @@ export async function updateForm(
   }
 ) {
   try {
-    // Validate input
     const validated = validate(UpdateFormSchema, updates);
     if (validated.error) return { data: null, error: validated.error };
-
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: form } = await supabase
-      .from("forms")
-      .select("organization_id")
-      .eq("id", formId)
-      .maybeSingle();
-    if (!form) return { data: null, error: "Form not found" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", form.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase
-      .from("forms")
-      .update(updates as any)
-      .eq("id", formId)
-      .select()
-      .single();
-
-    if (error) return { data: null, error: error.message };
-    revalidatePath("/dashboard/forms");
-    return { data, error: null };
+    const result = await updateFormTemplateDraft(formId, {
+      title: updates.title,
+      description: updates.description,
+      status: updates.status,
+      category: updates.category,
+      schema_jsonb: updates.blocks,
+    });
+    if (result.error || !result.data) return { data: null, error: result.error };
+    return { data: mapTemplateToLegacyForm(result.data), error: null };
   } catch (err: any) {
     return { data: null, error: err.message };
   }
@@ -242,39 +422,9 @@ export async function deleteForm(formId: string) {
 
 export async function publishForm(formId: string) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { data: null, error: "Unauthorized" };
-
-    const { data: form } = await supabase
-      .from("forms")
-      .select("organization_id")
-      .eq("id", formId)
-      .maybeSingle();
-    if (!form) return { data: null, error: "Form not found" };
-
-    const { data: membership } = await supabase
-      .from("organization_members")
-      .select("user_id")
-      .eq("organization_id", form.organization_id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (!membership) return { data: null, error: "Unauthorized" };
-
-    const { data, error } = await supabase.rpc("publish_form", {
-      p_form_id: formId,
-    });
-
-    if (error) {
-      logger.error("publishForm RPC error", error.message);
-      return { data: null, error: error.message };
-    }
-    const result = data as { error?: string } | null;
-    if (result?.error) return { data: null, error: result.error };
-
-    revalidatePath("/dashboard/forms");
-    return { data, error: null };
+    const result = await publishFormTemplate(formId);
+    if (result.error || !result.data) return { data: null, error: result.error };
+    return { data: mapTemplateToLegacyForm(result.data), error: null };
   } catch (err: any) {
     logger.error("publishForm exception", err.message);
     return { data: null, error: err.message };
@@ -303,7 +453,7 @@ export async function getFormSubmissions(orgId: string) {
       .select(
         `
         *,
-        forms:form_id (title, category)
+        form_templates:template_id (title, category, version)
       `
       )
       .eq("organization_id", orgId)
@@ -328,7 +478,7 @@ export async function getFormSubmission(submissionId: string) {
       .select(
         `
         *,
-        forms:form_id (title, category, blocks, version)
+        form_templates:template_id (title, category, schema_jsonb, version)
       `
       )
       .eq("id", submissionId)
@@ -384,7 +534,11 @@ export async function createFormSubmission(params: {
       .from("form_submissions")
       .insert({
         ...params,
+        template_id: params.form_id,
+        submission_data_jsonb: params.data,
         submitted_by: user.id,
+        worker_id: user.id,
+        submitted_at: new Date().toISOString(),
         submitter_name: profile?.full_name || user?.email,
         status: "pending",
       })
@@ -528,6 +682,83 @@ export async function verifyDocumentHash(hash: string) {
     return { data, error: null };
   } catch (err: any) {
     logger.error("verifyDocumentHash exception", err.message);
+    return { data: null, error: err.message };
+  }
+}
+
+/* ── Global Template Library ───────────────────────── */
+
+export async function getGlobalFormTemplates(params: {
+  orgId: string;
+  sector: "TRADES" | "CARE";
+}) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.orgId)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const { data, error } = await (supabase as any)
+      .from("global_form_templates")
+      .select("*")
+      .in("sector", [params.sector, "ALL"])
+      .order("clone_count", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) return { data: null, error: error.message };
+    return { data: (data as GlobalFormTemplate[]) ?? [], error: null };
+  } catch (err: any) {
+    return { data: null, error: err.message };
+  }
+}
+
+export async function cloneGlobalTemplateToWorkspace(params: {
+  globalTemplateId: string;
+  orgId: string;
+}) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: "Unauthorized" };
+
+    const { data: membership } = await supabase
+      .from("organization_members")
+      .select("user_id")
+      .eq("organization_id", params.orgId)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!membership) return { data: null, error: "Unauthorized" };
+
+    const { data, error } = await (supabase as any).rpc("clone_global_template_to_workspace", {
+      p_global_template_id: params.globalTemplateId,
+      p_organization_id: params.orgId,
+    });
+
+    if (error) return { data: null, error: error.message };
+
+    const newTemplateId = typeof data === "string" ? data : null;
+    if (!newTemplateId) return { data: null, error: "Failed to clone template" };
+
+    revalidatePath("/dashboard/forms");
+    revalidatePath("/dashboard/forms/library");
+
+    return { data: { templateId: newTemplateId }, error: null };
+  } catch (err: any) {
     return { data: null, error: err.message };
   }
 }

@@ -72,6 +72,13 @@ const AVATAR_COLORS = [
   "#D946EF", "#F43F5E", "#0EA5E9", "#10B981",
 ];
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_REGEX.test(value);
+}
+
 function getAvatarColor(initials: string) {
   const c = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
   return AVATAR_COLORS[c % AVATAR_COLORS.length];
@@ -121,6 +128,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const { orgId } = useOrg();
   const allClients = useClientsStore((s) => s.clients);
   const [saving, setSaving] = useState(false);
+  const hasValidOrgContext = isUuid(orgId);
 
   /* ── Derived ────────────────────────────────────────────── */
   const filteredClients = useMemo(
@@ -153,7 +161,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
   const dueDate = addDays(issueDate, paymentTerms.find((t) => t.value === terms)?.days || 7);
 
-  const isValid = !!selectedClient && lineItems.length > 0 && total > 0;
+  const isValid = !!selectedClient && lineItems.length > 0 && total > 0 && hasValidOrgContext;
 
   /* ── Reset on open ──────────────────────────────────────── */
   useEffect(() => {
@@ -224,6 +232,10 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
   /* ── Save / Send ────────────────────────────────────────── */
   async function handleSubmit(mode: "send" | "draft" | "link") {
+    if (!hasValidOrgContext) {
+      addToast("Workspace context not loaded. Please refresh the page.");
+      return;
+    }
     if (!isValid || saving) return;
 
     // If org is available, persist to server
@@ -272,7 +284,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
     // No org available — cannot persist invoice
     console.error("Cannot create invoice: no organization context");
-    addToast("Unable to save — please refresh and try again");
+    addToast("Workspace context not loaded. Please refresh the page.");
     setSaving(false);
     return;
   }
@@ -652,7 +664,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
                   <motion.button
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSubmit("send")}
-                    disabled={!isValid}
+                    disabled={!isValid || !hasValidOrgContext}
                     className="flex items-center gap-2 rounded-l-md bg-gradient-to-b from-[var(--brand)] to-[var(--brand-hover)] px-3.5 py-1.5 text-[12px] font-medium text-black transition-all duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     {sent ? (
@@ -676,7 +688,7 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
                   <button
                     onClick={() => setSplitMenuOpen(!splitMenuOpen)}
-                    disabled={!isValid}
+                    disabled={!isValid || !hasValidOrgContext}
                     className="flex h-[32px] items-center rounded-r-md border-l border-[rgba(0,0,0,0.15)] bg-gradient-to-b from-[var(--brand)] to-[var(--brand-hover)] px-1.5 text-black transition-colors duration-200 hover:brightness-110 disabled:opacity-30"
                   >
                     <ChevronDown size={11} />

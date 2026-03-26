@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
         organization_id: invite.organization_id,
         user_id: user.id,
         role: invite.role,
+        branch_id: invite.branch_id || null,
         status: "active",
         invited_by: invite.invited_by,
         joined_at: new Date().toISOString(),
@@ -149,7 +150,12 @@ export async function POST(req: NextRequest) {
         action: "member.joined",
         entity_type: "organization_member",
         entity_id: user.id,
-        new_data: { role: invite.role, via: "invite_accept", full_name: full_name || null },
+        new_data: {
+          role: invite.role,
+          branch_id: invite.branch_id || null,
+          via: "invite_accept",
+          full_name: full_name || null,
+        },
       });
     } catch { /* non-fatal */ }
 

@@ -428,6 +428,29 @@ img, video, svg, canvas {
   display: none;
 }
 
+/* Team drawer scrollbar: explicit indicator for long skills lists */
+.scrollbar-team {
+  scrollbar-width: thin;
+  scrollbar-color: #374151 transparent;
+}
+
+.scrollbar-team::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-team::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-team::-webkit-scrollbar-thumb {
+  background: #374151;
+  border-radius: 999px;
+}
+
+.scrollbar-team::-webkit-scrollbar-thumb:hover {
+  background: #4b5563;
+}
+
 /* ── Background Textures ─────────────────────────────── */
 
 .bg-dot-grid {

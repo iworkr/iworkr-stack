@@ -1,4 +1,19 @@
 class TestConfig {
+  static const String adminEmail = String.fromEnvironment(
+    'ADMIN_EMAIL',
+    defaultValue: 'qa-admin@iworkrapp.com',
+  );
+  static const String workerEmail = String.fromEnvironment(
+    'WORKER_EMAIL',
+    defaultValue: 'qa-worker@iworkrapp.com',
+  );
+  static const String defaultPassword = String.fromEnvironment(
+    'TEST_PASSWORD',
+    defaultValue: 'QATestPass123!',
+  );
+  static const String workerPassword = defaultPassword;
+  static const String adminPassword = defaultPassword;
+
   static const String testEmail = String.fromEnvironment(
     'TEST_EMAIL',
     defaultValue: 'qa-test@iworkrapp.com',

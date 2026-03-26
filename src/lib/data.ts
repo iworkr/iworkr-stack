@@ -11,7 +11,27 @@
 
 export type Priority = "urgent" | "high" | "medium" | "low" | "none";
 export type JobStatus = "backlog" | "todo" | "scheduled" | "en_route" | "on_site" | "in_progress" | "done" | "completed" | "invoiced" | "archived" | "cancelled" | "urgent";
-export type InboxItemType = "job_assigned" | "quote_approved" | "mention" | "system" | "review";
+export type InboxItemType =
+  | "job_assigned"
+  | "quote_approved"
+  | "mention"
+  | "system"
+  | "review"
+  | "invoice_paid"
+  | "compliance_warning"
+  | "message_received"
+  | "announcement"
+  | "job_cancelled"
+  | "job_rescheduled"
+  | "schedule_conflict"
+  | "form_signed"
+  | "team_invite"
+  | "nudge_clock_in"
+  | "nudge_clock_out"
+  | "shift_assigned"
+  | "shift_rescheduled"
+  | "chat_reply"
+  | "chat_mention";
 
 export interface SubTask {
   id: string;
@@ -66,6 +86,10 @@ export interface InboxItem {
   context?: string;
   snoozedUntil?: string | null;
   archived?: boolean;
+  actionUrl?: string | null;
+  referenceId?: string | null;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | null;
 }
 
 export type ClientStatus = "active" | "lead" | "churned" | "inactive";

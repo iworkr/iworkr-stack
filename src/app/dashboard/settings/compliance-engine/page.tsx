@@ -106,14 +106,19 @@ export default function ComplianceEnginePage() {
   const toast = useToastStore();
   const queryClient = useQueryClient();
 
+  const safeOrgId = orgId ?? "";
+
   const { data: engineData, isLoading: loading } = useQuery<ComplianceEngineQueryData>({
-    queryKey: queryKeys.settings.complianceEngine(orgId ?? ""),
+    queryKey: queryKeys.settings.complianceEngine(safeOrgId),
     queryFn: async () => {
+      if (!safeOrgId) {
+        return { frameworks: [], stats: null, logs: [], settings: null };
+      }
       const [fwRes, stRes, logRes, settRes] = await Promise.all([
-        getFrameworks(orgId!),
-        getComplianceStats(orgId!),
-        getComplianceLogs(orgId!, { limit: 20 }),
-        getComplianceSettings(orgId!),
+        getFrameworks(safeOrgId),
+        getComplianceStats(safeOrgId),
+        getComplianceLogs(safeOrgId, { limit: 20 }),
+        getComplianceSettings(safeOrgId),
       ]);
       return {
         frameworks: (fwRes.data ?? []) as unknown as Framework[],
@@ -122,7 +127,7 @@ export default function ComplianceEnginePage() {
         settings: settRes.data as unknown as { compliance_mode: string; compliance_enabled: boolean } | null,
       };
     },
-    enabled: !!orgId,
+    enabled: !!safeOrgId,
     staleTime: 60_000,
   });
 
@@ -136,23 +141,23 @@ export default function ComplianceEnginePage() {
   const [uploading, setUploading] = useState<string | null>(null);
 
   const invalidateEngine = () => {
-    if (orgId) {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.complianceEngine(orgId) });
+    if (safeOrgId) {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.settings.complianceEngine(safeOrgId) });
     }
   };
 
   const handleToggleEnabled = async () => {
-    if (!orgId || !settings) return;
+    if (!safeOrgId || !settings) return;
     const next = !settings.compliance_enabled;
-    await updateComplianceSettings(orgId, { compliance_enabled: next });
+    await updateComplianceSettings(safeOrgId, { compliance_enabled: next });
     invalidateEngine();
     toast.addToast(next ? "Compliance engine enabled" : "Compliance engine disabled");
   };
 
   const handleToggleMode = async () => {
-    if (!orgId || !settings) return;
+    if (!safeOrgId || !settings) return;
     const next = settings.compliance_mode === "ADVISORY" ? "HARD_STOP" : "ADVISORY";
-    await updateComplianceSettings(orgId, { compliance_mode: next });
+    await updateComplianceSettings(safeOrgId, { compliance_mode: next });
     invalidateEngine();
     toast.addToast(`Compliance mode set to ${next === "HARD_STOP" ? "Hard Stop" : "Advisory"}`);
   };
@@ -163,26 +168,26 @@ export default function ComplianceEnginePage() {
     input.accept = ".pdf,.txt";
     input.onchange = async (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file || !orgId) return;
+      if (!file || !safeOrgId) return;
 
       setUploading(frameworkId);
 
       if (file.name.endsWith(".txt")) {
         const text = await file.text();
-        const res = await triggerIngestion(orgId, frameworkId, { raw_text: text });
+        const res = await triggerIngestion(safeOrgId, frameworkId, { raw_text: text });
         if (res.error) toast.addToast(res.error, undefined, "error");
         else toast.addToast("Ingestion started — processing text");
       } else {
         const { createClient } = await import("@/lib/supabase/client");
         const supabase = createClient();
-        const path = `${orgId}/${frameworkId}/${file.name}`;
+        const path = `${safeOrgId}/${frameworkId}/${file.name}`;
         const { error: upErr } = await supabase.storage.from("compliance-raw").upload(path, file, { upsert: true });
         if (upErr) {
           toast.addToast(upErr.message, undefined, "error");
           setUploading(null);
           return;
         }
-        const res = await triggerIngestion(orgId, frameworkId, { storage_path: path });
+        const res = await triggerIngestion(safeOrgId, frameworkId, { storage_path: path });
         if (res.error) toast.addToast(res.error, undefined, "error");
         else toast.addToast("Ingestion started — processing PDF");
       }
@@ -194,13 +199,13 @@ export default function ComplianceEnginePage() {
   };
 
   const handleDeleteFramework = async (id: string) => {
-    if (!orgId) return;
-    await deleteFramework(orgId, id);
+    if (!safeOrgId) return;
+    await deleteFramework(safeOrgId, id);
     invalidateEngine();
     toast.addToast("Framework deleted");
   };
 
-  if (!orgId) return null;
+  if (!safeOrgId) return null;
 
   if (loading) {
     return (
@@ -295,8 +300,8 @@ export default function ComplianceEnginePage() {
                 fw={fw}
                 uploading={uploading === fw.id}
                 onUpload={() => handleUploadPdf(fw.id)}
-                onActivate={() => updateFrameworkStatus(orgId!, fw.id, "ACTIVE").then(invalidateEngine)}
-                onDeprecate={() => updateFrameworkStatus(orgId!, fw.id, "DEPRECATED").then(invalidateEngine)}
+                onActivate={() => updateFrameworkStatus(safeOrgId, fw.id, "ACTIVE").then(invalidateEngine)}
+                onDeprecate={() => updateFrameworkStatus(safeOrgId, fw.id, "DEPRECATED").then(invalidateEngine)}
                 onDelete={() => handleDeleteFramework(fw.id)}
               />
             ))}
@@ -357,7 +362,7 @@ export default function ComplianceEnginePage() {
       <AnimatePresence>
         {showCreateModal && (
           <CreateFrameworkModal
-            orgId={orgId}
+            orgId={safeOrgId}
             onClose={() => setShowCreateModal(false)}
             onCreated={() => { setShowCreateModal(false); invalidateEngine(); }}
           />

@@ -93,7 +93,13 @@ Deno.serve(async (req: Request) => {
 });
 
 async function processWebhook(
-  webhook: { id: string; provider: string; event_type: string; payload: Record<string, unknown> },
+  webhook: {
+    id: string;
+    provider: string;
+    event_type: string;
+    payload: Record<string, unknown>;
+    idempotency_key?: string | null;
+  },
   supabase: ReturnType<typeof createClient>,
 ) {
   switch (webhook.provider) {
@@ -115,39 +121,127 @@ async function processWebhook(
 }
 
 async function processStripeWebhook(
-  webhook: { event_type: string; payload: Record<string, unknown> },
+  webhook: { event_type: string; payload: Record<string, unknown>; idempotency_key?: string | null },
   supabase: ReturnType<typeof createClient>,
 ) {
   const payload = webhook.payload as Record<string, unknown>;
 
-  switch (webhook.event_type) {
-    case "customer.subscription.created":
-    case "customer.subscription.updated": {
-      const orgId = (payload.metadata as Record<string, string>)?.organization_id;
-      if (!orgId) {
-        console.warn(`[Stripe Queue] ${webhook.event_type}: missing org_id`);
-        return;
+  const persistDlq = async (message: string) => {
+    const stripeEventId =
+      webhook.idempotency_key ||
+      (payload.id as string | undefined) ||
+      `${webhook.event_type}-${Date.now()}`;
+    await supabase.from("stripe_webhook_failures").upsert(
+      {
+        stripe_event_id: stripeEventId,
+        event_type: webhook.event_type,
+        payload,
+        error_message: message,
+        resolved: false,
+      },
+      { onConflict: "stripe_event_id" }
+    );
+  };
+
+  try {
+    switch (webhook.event_type) {
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const sub = payload as Record<string, any>;
+        const orgId = sub?.metadata?.organization_id as string | undefined;
+        const subId = (sub?.id as string | undefined) || null;
+        if (!orgId || !subId) {
+          throw new Error(`[Stripe Queue] ${webhook.event_type}: missing org_id or subscription id`);
+        }
+
+        const item = (sub?.items?.data?.[0] as Record<string, any> | undefined) || {};
+        const priceId =
+          (item?.price?.id as string | undefined) ||
+          (sub?.plan?.id as string | undefined) ||
+          "";
+        const periodStart =
+          (item?.current_period_start as number | undefined) ||
+          (sub?.current_period_start as number | undefined) ||
+          (sub?.start_date as number | undefined);
+        const periodEnd =
+          (item?.current_period_end as number | undefined) ||
+          (sub?.current_period_end as number | undefined);
+
+        const statusMap: Record<string, string> = {
+          active: "active",
+          trialing: "trialing",
+          past_due: "past_due",
+          canceled: "canceled",
+          incomplete: "incomplete",
+          incomplete_expired: "incomplete_expired",
+          unpaid: "unpaid",
+          paused: "paused",
+        };
+
+        const { error: subErr } = await supabase.from("subscriptions").upsert(
+          {
+            organization_id: orgId,
+            stripe_subscription_id: subId,
+            stripe_price_id: priceId,
+            plan_key: "free",
+            status: statusMap[sub?.status as string] || "incomplete",
+            current_period_start: periodStart
+              ? new Date(periodStart * 1000).toISOString()
+              : new Date().toISOString(),
+            current_period_end: periodEnd
+              ? new Date(periodEnd * 1000).toISOString()
+              : null,
+            cancel_at_period_end: Boolean(sub?.cancel_at_period_end),
+            metadata: {
+              stripe_subscription: subId,
+              price_id: priceId,
+              source: "stripe_queue",
+            },
+          },
+          { onConflict: "stripe_subscription_id" }
+        );
+        if (subErr) throw new Error(`[Stripe Queue] subscription upsert failed: ${subErr.message}`);
+
+        const orgUpdate: Record<string, unknown> = {
+          billing_provider: "stripe",
+        };
+        if (periodEnd) {
+          orgUpdate.subscription_active_until = new Date(periodEnd * 1000).toISOString();
+        }
+        const { error: orgErr } = await supabase
+          .from("organizations")
+          .update(orgUpdate)
+          .eq("id", orgId);
+        if (orgErr) throw new Error(`[Stripe Queue] org update failed: ${orgErr.message}`);
+
+        console.log(`[Stripe Queue] Processed ${webhook.event_type} for org ${orgId}`);
+        break;
       }
-      console.log(`[Stripe Queue] Processed ${webhook.event_type} for org ${orgId}`);
-      break;
-    }
-    case "customer.subscription.deleted": {
-      const subId = payload.id as string;
-      if (subId) {
-        await supabase
-          .from("subscriptions")
-          .update({ status: "canceled", canceled_at: new Date().toISOString() })
-          .eq("stripe_subscription_id", subId);
+      case "customer.subscription.deleted": {
+        const subId = payload.id as string;
+        if (subId) {
+          const { error: subDeleteErr } = await supabase
+            .from("subscriptions")
+            .update({ status: "canceled", canceled_at: new Date().toISOString() })
+            .eq("stripe_subscription_id", subId);
+          if (subDeleteErr) {
+            throw new Error(`[Stripe Queue] subscription delete update failed: ${subDeleteErr.message}`);
+          }
+        }
+        break;
       }
-      break;
+      case "invoice.payment_succeeded":
+      case "invoice.payment_failed":
+      case "account.updated":
+        console.log(`[Stripe Queue] Processed ${webhook.event_type}`);
+        break;
+      default:
+        console.log(`[Stripe Queue] Unhandled: ${webhook.event_type}`);
     }
-    case "invoice.payment_succeeded":
-    case "invoice.payment_failed":
-    case "account.updated":
-      console.log(`[Stripe Queue] Processed ${webhook.event_type}`);
-      break;
-    default:
-      console.log(`[Stripe Queue] Unhandled: ${webhook.event_type}`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    await persistDlq(message);
+    throw err;
   }
 }
 

@@ -375,7 +375,7 @@ export default function IntakeReviewPage({
     setCommitResult(result);
     setCommitting(false);
     if (result.success) {
-      setTimeout(() => router.push("/dashboard/intake"), 2000);
+      setTimeout(() => router.replace("/dashboard/intake"), 2000);
     }
   }, [orgId, sessionId, formData, reviewNotes, router]);
 
@@ -385,7 +385,7 @@ export default function IntakeReviewPage({
     setRejecting(true);
     await rejectIntakeSession(sessionId, orgId, rejectReason);
     setRejecting(false);
-    router.push("/dashboard/intake");
+    router.replace("/dashboard/intake");
   }, [orgId, sessionId, rejectReason, router]);
 
   // Computed values

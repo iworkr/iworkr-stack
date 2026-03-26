@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/care_shift_provider.dart';
 import 'package:iworkr_mobile/core/services/mobile_telemetry_engine.dart';
@@ -82,15 +85,24 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 /// Listenable that notifies GoRouter when auth state changes
 class AuthStateNotifier extends ChangeNotifier {
+  late final StreamSubscription<AuthState> _authSub;
+
   AuthStateNotifier() {
-    SupabaseService.auth.onAuthStateChange.listen((data) {
+    _authSub = SupabaseService.auth.onAuthStateChange.listen((data) {
       notifyListeners();
     });
+  }
+
+  @override
+  void dispose() {
+    _authSub.cancel();
+    super.dispose();
   }
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = AuthStateNotifier();
+  ref.onDispose(authNotifier.dispose);
 
   late final GoRouter router;
   router = GoRouter(

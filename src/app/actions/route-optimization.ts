@@ -86,6 +86,14 @@ export interface OptimizationRun {
   created_at: string;
 }
 
+export interface DispatchableWorker {
+  id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  role: string;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    1) GET OPTIMIZABLE BLOCKS — Fetch worker's day agenda with coordinates
    ═══════════════════════════════════════════════════════════════════ */
@@ -393,5 +401,54 @@ export async function getWorkersWithBlocks(
     return { workers };
   } catch {
     return { workers: [], error: "Failed to fetch workers" };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9) GET DISPATCHABLE WORKERS — Branch-scoped technician selector
+   ═══════════════════════════════════════════════════════════════════ */
+
+export async function getDispatchableWorkers(
+  orgId: string,
+  branchId: string | null
+): Promise<{ workers: DispatchableWorker[]; error?: string }> {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const rpc = supabase as any;
+
+    const { data, error } = await rpc.rpc("get_dispatchable_workers", {
+      p_workspace_id: orgId,
+      p_branch_id: branchId,
+    });
+
+    if (error) return { workers: [], error: error.message };
+
+    const rows = (data || []) as Array<{
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      full_name?: string | null;
+      role?: string | null;
+    }>;
+
+    const workers = rows.map((row) => {
+      const first = row.first_name || "";
+      const last = row.last_name || "";
+      const composed = `${first} ${last}`.trim();
+      return {
+        id: row.id,
+        first_name: first,
+        last_name: last,
+        full_name: row.full_name || composed || "Unnamed worker",
+        role: row.role || "worker",
+      };
+    });
+
+    return { workers };
+  } catch (e) {
+    return {
+      workers: [],
+      error: e instanceof Error ? e.message : "Failed to fetch dispatchable workers",
+    };
   }
 }

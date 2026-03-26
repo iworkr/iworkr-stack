@@ -6,7 +6,6 @@ import {
   Building2,
   Plus,
   MapPin,
-  Globe,
   Phone,
   Trash2,
   Pencil,
@@ -24,6 +23,7 @@ import {
   type Branch,
 } from "@/app/actions/branches";
 import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
+import { AddBranchForm } from "@/components/branches/AddBranchForm";
 
 const TIMEZONES = [
   "Australia/Brisbane",
@@ -66,9 +66,10 @@ export default function BranchesPage() {
     const res = await getBranches(currentOrg.id);
     setBranches(res.data || []);
     setLoading(false);
-  }, [currentOrg?.id]);
+  }, [currentOrg]);
 
-  useEffect(() => { loadBranches(); }, [loadBranches]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadBranches(); }, [loadBranches]);
 
   function openCreateModal() {
     setEditBranch(null);
@@ -266,82 +267,95 @@ export default function BranchesPage() {
                 </button>
               </div>
 
-              <div className="space-y-4 px-6 py-5">
-                <div>
-                  <label className="mb-1 block text-[10px] text-zinc-600">Branch Name *</label>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Gold Coast Office"
-                    className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-[10px] text-zinc-600">Address</label>
-                  <AddressAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    onSelect={(result: AddressResult) => {
-                      setAddress(result.address);
-                      if (result.city) setCity(result.city);
-                      if (result.state) setState(result.state);
-                      if (result.postalCode) setPostalCode(result.postalCode);
-                    }}
-                    placeholder="Search address…"
-                    inputClassName="rounded-lg border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 focus:border-[#10B981]/30"
-                    showIcon
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">City</label>
-                    <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+              {editBranch ? (
+                <>
+                  <div className="space-y-4 px-6 py-5">
+                    <div>
+                      <label className="mb-1 block text-[10px] text-zinc-600">Branch Name *</label>
+                      <input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Gold Coast Office"
+                        className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] text-zinc-600">Address</label>
+                      <AddressAutocomplete
+                        value={address}
+                        onChange={setAddress}
+                        onSelect={(result: AddressResult) => {
+                          setAddress(result.address);
+                          if (result.city) setCity(result.city);
+                          if (result.state) setState(result.state);
+                          if (result.postalCode) setPostalCode(result.postalCode);
+                        }}
+                        placeholder="Search address…"
+                        inputClassName="rounded-lg border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 focus:border-[#10B981]/30"
+                        showIcon
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">City</label>
+                        <input value={city} onChange={(e) => setCity(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">State</label>
+                        <input value={state} onChange={(e) => setState(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">Postal Code</label>
+                        <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">Timezone</label>
+                        <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none">
+                          {TIMEZONES.map((tz) => <option key={tz} value={tz} className="bg-zinc-900">{tz.split("/").pop()?.replace("_", " ")}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">Tax Rate (%)</label>
+                        <input type="number" step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">Phone</label>
+                        <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] text-zinc-600">Email</label>
+                        <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">State</label>
-                    <input value={state} onChange={(e) => setState(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">Postal Code</label>
-                    <input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">Timezone</label>
-                    <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none">
-                      {TIMEZONES.map((tz) => <option key={tz} value={tz} className="bg-zinc-900">{tz.split("/").pop()?.replace("_", " ")}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">Tax Rate (%)</label>
-                    <input type="number" step="0.01" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">Phone</label>
-                    <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] text-zinc-600">Email</label>
-                    <input value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5 text-[12px] text-zinc-300 outline-none focus:border-[#10B981]/30" />
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-6 py-3">
-                <button onClick={() => setModalOpen(false)} className="rounded-md px-3 py-1.5 text-[12px] text-zinc-500 hover:text-zinc-300">Cancel</button>
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={handleSave}
-                  disabled={!name.trim() || saving}
-                  className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#10B981] to-[#059669] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
-                >
-                  {saving && <Loader2 size={12} className="animate-spin" />}
-                  {editBranch ? "Update" : "Create"}
-                </motion.button>
-              </div>
+                  <div className="flex items-center justify-end gap-2 border-t border-[rgba(255,255,255,0.06)] px-6 py-3">
+                    <button onClick={() => setModalOpen(false)} className="rounded-md px-3 py-1.5 text-[12px] text-zinc-500 hover:text-zinc-300">Cancel</button>
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={handleSave}
+                      disabled={!name.trim() || saving}
+                      className="flex items-center gap-1.5 rounded-md bg-gradient-to-b from-[#10B981] to-[#059669] px-4 py-1.5 text-[12px] font-semibold text-black disabled:opacity-50"
+                    >
+                      {saving && <Loader2 size={12} className="animate-spin" />}
+                      Update
+                    </motion.button>
+                  </div>
+                </>
+              ) : (
+                <AddBranchForm
+                  workspaceId={currentOrg?.id || ""}
+                  onCancel={() => setModalOpen(false)}
+                  onSuccess={async () => {
+                    setModalOpen(false);
+                    await loadBranches();
+                  }}
+                />
+              )}
             </motion.div>
           </motion.div>
         )}

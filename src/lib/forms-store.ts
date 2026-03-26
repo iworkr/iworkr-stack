@@ -19,10 +19,10 @@ import {
   getForms,
   getFormSubmissions,
   getFormsOverview,
-  createForm as createFormServer,
-  updateForm as updateFormServer,
+  createFormTemplateDraft as createFormTemplateDraftServer,
+  updateFormTemplateDraft as updateFormTemplateDraftServer,
   deleteForm as deleteFormServer,
-  publishForm as publishFormServer,
+  publishFormTemplate as publishFormTemplateServer,
   createFormSubmission as createSubmissionServer,
   saveFormDraft as saveFormDraftServer,
   signAndLockSubmission as signAndLockServer,
@@ -88,6 +88,12 @@ function timeSince(dateStr: string | null | undefined): string {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function mapServerTemplate(s: any): FormTemplate {
+  const blocks = Array.isArray(s.schema_jsonb)
+    ? s.schema_jsonb
+    : Array.isArray(s.blocks)
+      ? s.blocks
+      : [];
+
   return {
     id: s.id,
     title: s.title || "",
@@ -96,7 +102,7 @@ function mapServerTemplate(s: any): FormTemplate {
     status: s.status || "draft",
     version: s.version || 1,
     category: s.category || "custom",
-    blocks: Array.isArray(s.blocks) ? s.blocks : [],
+    blocks,
     usedCount: s.submissions_count || 0,
     lastEdited: timeSince(s.updated_at || s.created_at),
     createdBy: s.created_by_name || "Unknown",
@@ -121,7 +127,7 @@ function mapServerSubmission(s: any): FormSubmission {
       }
     : undefined;
 
-  const formData = s.data || {};
+  const formData = s.submission_data_jsonb || s.data || {};
   const fields = Object.entries(formData).map(([key, val]) => ({
     label: key,
     value: String(val),
@@ -129,7 +135,7 @@ function mapServerSubmission(s: any): FormSubmission {
 
   return {
     id: s.id,
-    formId: s.form_id,
+    formId: s.template_id || s.form_id,
     formTitle: s.forms?.title || "",
     formVersion: s.forms?.version || 1,
     status: s.status === "signed" ? "signed" : s.status === "expired" ? "expired" : "pending",
@@ -176,6 +182,14 @@ interface FormsState {
     blocks?: FormBlock[];
   }) => Promise<{ data: any; error: string | null }>;
 
+  createFormTemplateDraftServer: (params: {
+    workspace_id: string;
+    title?: string;
+    description?: string;
+    category?: string;
+    schema_jsonb?: FormBlock[];
+  }) => Promise<{ data: any; error: string | null }>;
+
   updateFormServer: (
     formId: string,
     updates: {
@@ -188,8 +202,20 @@ interface FormsState {
     }
   ) => Promise<{ data: any; error: string | null }>;
 
+  updateFormTemplateDraftServer: (
+    formId: string,
+    updates: {
+      title?: string;
+      description?: string;
+      status?: string;
+      category?: string;
+      schema_jsonb?: FormBlock[];
+    }
+  ) => Promise<{ data: any; error: string | null }>;
+
   deleteFormServer: (formId: string) => Promise<{ error: string | null }>;
   publishFormServer: (formId: string) => Promise<{ data: any; error: string | null }>;
+  publishFormTemplateServer: (formId: string) => Promise<{ data: any; error: string | null }>;
 
   createSubmission: (params: {
     form_id: string;
@@ -303,7 +329,7 @@ export const useFormsStore = create<FormsState>()(
         t.id === id ? { ...t, status: "archived" as const } : t
       ),
     }));
-    updateFormServer(id, { status: "archived" }).catch((err) => {
+    updateFormTemplateDraftServer(id, { status: "archived" }).catch((err) => {
       console.error("Failed to archive template:", err);
     });
   },
@@ -327,12 +353,12 @@ export const useFormsStore = create<FormsState>()(
 
     const orgId = get().orgId;
     if (orgId) {
-      createFormServer({
-        organization_id: orgId,
+      createFormTemplateDraftServer({
+        workspace_id: orgId,
         title: dupe.title,
         description: original.description,
         category: original.category,
-        blocks: original.blocks,
+        schema_jsonb: original.blocks,
       }).catch((err) => {
         console.error("Failed to duplicate template on server:", err);
       });
@@ -342,13 +368,37 @@ export const useFormsStore = create<FormsState>()(
   /* ── Server-backed CRUD ────────────────────── */
 
   createFormServer: async (params) => {
-    const res = await createFormServer(params);
+    const res = await createFormTemplateDraftServer({
+      workspace_id: params.organization_id,
+      title: params.title,
+      description: params.description,
+      category: params.category,
+      schema_jsonb: params.blocks,
+    });
+    if (!res.error) get().refresh();
+    return { data: res.data, error: res.error };
+  },
+
+  createFormTemplateDraftServer: async (params) => {
+    const res = await createFormTemplateDraftServer(params);
     if (!res.error) get().refresh();
     return { data: res.data, error: res.error };
   },
 
   updateFormServer: async (formId, updates) => {
-    const res = await updateFormServer(formId, updates);
+    const res = await updateFormTemplateDraftServer(formId, {
+      title: updates.title,
+      description: updates.description,
+      status: updates.status,
+      category: updates.category,
+      schema_jsonb: updates.blocks,
+    });
+    if (!res.error) get().refresh();
+    return { data: res.data, error: res.error };
+  },
+
+  updateFormTemplateDraftServer: async (formId, updates) => {
+    const res = await updateFormTemplateDraftServer(formId, updates);
     if (!res.error) get().refresh();
     return { data: res.data, error: res.error };
   },
@@ -368,7 +418,13 @@ export const useFormsStore = create<FormsState>()(
         t.id === formId ? { ...t, status: "published" as const, version: t.version + 1 } : t
       ),
     }));
-    const res = await publishFormServer(formId);
+    const res = await publishFormTemplateServer(formId);
+    if (res.error) get().refresh();
+    return { data: res.data, error: res.error };
+  },
+
+  publishFormTemplateServer: async (formId) => {
+    const res = await publishFormTemplateServer(formId);
     if (res.error) get().refresh();
     return { data: res.data, error: res.error };
   },

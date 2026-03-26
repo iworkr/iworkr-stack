@@ -17,22 +17,21 @@ import {
   ShieldCheck,
   Clock,
   CheckCircle,
-  Layers,
   X,
   PenTool,
-  Heart,
   AlertTriangle,
   Activity,
   Pill,
   FileCheck,
   Brain,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormsStore, type FormsTab } from "@/lib/forms-store";
 import { FormCard } from "@/components/forms/form-card";
 import { SubmissionsList } from "@/components/forms/submissions-list";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useToastStore } from "@/components/app/action-toast";
 
 /* ── Tab Config ───────────────────────────────────────── */
 
@@ -177,17 +176,51 @@ function CareFormSuggestions({ onSelect }: { onSelect: () => void }) {
 export default function FormsPage() {
   const router = useRouter();
   const { t, isCare } = useIndustryLexicon();
+  const { addToast } = useToastStore();
   const {
     templates,
     submissions,
     activeTab,
     searchQuery,
     loading,
+    orgId,
     setActiveTab,
     setSearchQuery,
+    createFormTemplateDraftServer,
   } = useFormsStore();
 
   const [showSearch, setShowSearch] = useState(false);
+  const [creatingDraft, setCreatingDraft] = useState(false);
+
+  const handleCreateDraft = async () => {
+    if (creatingDraft) return;
+    if (!orgId) {
+      addToast("Workspace context missing.", undefined, "error");
+      return;
+    }
+
+    setCreatingDraft(true);
+    const created = await createFormTemplateDraftServer({
+      workspace_id: orgId,
+      title: "Untitled Form",
+      category: "custom",
+      schema_jsonb: [],
+    });
+    setCreatingDraft(false);
+
+    if (created.error || !created.data?.id) {
+      addToast(created.error || "Failed to create form draft.", undefined, "error");
+      return;
+    }
+    router.push(`/dashboard/forms/builder/${created.data.id}`);
+  };
+
+  useEffect(() => {
+    // Template Library is now a dedicated route.
+    if (activeTab === "library") {
+      setActiveTab("my_forms");
+    }
+  }, [activeTab, setActiveTab]);
 
   /* ── Stats ──────────────────────────────────────────── */
   const templateCount = useMemo(
@@ -209,8 +242,6 @@ export default function FormsPage() {
 
     if (activeTab === "my_forms") {
       items = items.filter((t) => t.source === "custom");
-    } else if (activeTab === "library") {
-      items = items.filter((t) => t.source === "library");
     }
 
     if (searchQuery) {
@@ -325,7 +356,8 @@ export default function FormsPage() {
             {/* New Form — Ghost button */}
             <motion.button
               whileTap={{ scale: 0.98 }}
-              onClick={() => router.push("/dashboard/forms/builder/new")}
+              onClick={handleCreateDraft}
+              disabled={creatingDraft}
               className="flex h-7 items-center gap-1.5 rounded-md border border-white/[0.08] bg-[#1A1A1A] px-3 text-[11px] font-medium text-white transition-all duration-150 hover:border-emerald-500/30 hover:text-emerald-400"
             >
               <Plus size={13} strokeWidth={2} />
@@ -342,7 +374,13 @@ export default function FormsPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === "library") {
+                    router.push("/dashboard/forms/library");
+                    return;
+                  }
+                  setActiveTab(tab.id);
+                }}
                 className={`relative flex items-center gap-1.5 px-4 py-2 text-[12px] transition-colors duration-150 ${
                   isActive ? "font-medium text-white" : "text-zinc-500 hover:text-zinc-300"
                 }`}
@@ -409,7 +447,7 @@ export default function FormsPage() {
                           : "Try adjusting your search."
                       }
                       cta={activeTab === "my_forms" ? (isCare ? "Create Care Form" : "New Form") : undefined}
-                      onCta={activeTab === "my_forms" ? () => router.push("/dashboard/forms/builder/new") : undefined}
+                      onCta={activeTab === "my_forms" ? handleCreateDraft : undefined}
                       hints={isCare ? [
                         { icon: ShieldCheck, label: "Care plans" },
                         { icon: ClipboardCheck, label: "Risk assessments" },
@@ -417,7 +455,7 @@ export default function FormsPage() {
                       ] : undefined}
                     />
                     {isCare && activeTab === "my_forms" && (
-                      <CareFormSuggestions onSelect={() => router.push("/dashboard/forms/builder/new")} />
+                      <CareFormSuggestions onSelect={handleCreateDraft} />
                     )}
                   </>
                 )}

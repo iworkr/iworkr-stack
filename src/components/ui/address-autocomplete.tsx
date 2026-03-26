@@ -5,13 +5,14 @@
  *   Uses the project's Mapbox access token (same as static/inline maps).
  *   Linear/Obsidian-themed with Framer Motion dropdown, keyboard navigation,
  *   and structured address + lat/lng output.
- * @lastAudit 2026-03-23
+ *   Gracefully degrades to plain text input after 3 consecutive API failures.
+ * @lastAudit 2026-03-26
  */
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useId, type CSSProperties } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Loader2 } from "lucide-react";
+import { MapPin, Loader2, WifiOff } from "lucide-react";
 import { MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provider";
 
 /* ── Types ────────────────────────────────────────────── */
@@ -69,7 +70,11 @@ interface AddressAutocompleteProps {
   variant?: "default" | "underline";
 }
 
-/* ── Mapbox Search API (v6) ──────────────────────────── */
+/* ── Mapbox Search API (v5) ──────────────────────────── */
+
+/** Sentinel value returned when the API call itself errored (not just empty results) */
+const API_ERROR_SENTINEL: MapboxFeature[] & { __apiError?: true } = [];
+API_ERROR_SENTINEL.__apiError = true;
 
 async function searchAddress(
   query: string,
@@ -88,11 +93,13 @@ async function searchAddress(
 
   try {
     const res = await fetch(url.toString(), { signal });
-    if (!res.ok) return [];
+    if (!res.ok) return API_ERROR_SENTINEL;
     const data = await res.json();
     return data.features ?? [];
-  } catch {
-    return [];
+  } catch (err: unknown) {
+    // AbortError is expected (user typing fast) — don't count as failure
+    if (err instanceof DOMException && err.name === "AbortError") return [];
+    return API_ERROR_SENTINEL;
   }
 }
 
@@ -131,19 +138,27 @@ export function AddressAutocomplete({
   const [focusedIdx, setFocusedIdx] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [justSelected, setJustSelected] = useState(false);
+  const [apiDown, setApiDown] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const consecutiveFailuresRef = useRef(0);
   const reactId = useId();
   const listboxId = `address-listbox-${reactId.replace(/:/g, "")}`;
+
+  /** Threshold: after this many consecutive API failures, degrade to plain text */
+  const API_FAILURE_THRESHOLD = 3;
 
   /* ── Fetch suggestions (debounced) ─────────────────── */
   const fetchSuggestions = useCallback(
     (query: string) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
+
+      // Don't attempt API calls if we've detected the service is down
+      if (apiDown) return;
 
       if (query.length < 3) {
         setSuggestions([]);
@@ -158,14 +173,26 @@ export function AddressAutocomplete({
         abortRef.current = controller;
         const results = await searchAddress(query, MAPBOX_ACCESS_TOKEN, countryBias, controller.signal);
         if (!controller.signal.aborted) {
-          setSuggestions(results);
-          setIsOpen(results.length > 0);
+          // Track consecutive API failures
+          if ((results as typeof API_ERROR_SENTINEL).__apiError) {
+            consecutiveFailuresRef.current += 1;
+            if (consecutiveFailuresRef.current >= API_FAILURE_THRESHOLD) {
+              setApiDown(true);
+            }
+            setSuggestions([]);
+            setIsOpen(false);
+          } else {
+            // Success — reset failure counter
+            consecutiveFailuresRef.current = 0;
+            setSuggestions(results);
+            setIsOpen(results.length > 0);
+          }
           setFocusedIdx(-1);
           setLoading(false);
         }
       }, 280);
     },
-    [countryBias],
+    [countryBias, apiDown],
   );
 
   /* ── Input change ──────────────────────────────────── */
@@ -288,6 +315,21 @@ export function AddressAutocomplete({
           className={`${baseInputClass} ${iconPadding} ${inputClassName}`}
         />
       </div>
+
+      {/* ── API degradation warning ─────────────────── */}
+      <AnimatePresence>
+        {apiDown && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-1 flex items-center gap-1.5 text-[10px] text-amber-500/80"
+          >
+            <WifiOff size={10} className="shrink-0" />
+            <span>Autocomplete unavailable — type full address manually</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Suggestions dropdown ─────────────────────── */}
       <AnimatePresence>

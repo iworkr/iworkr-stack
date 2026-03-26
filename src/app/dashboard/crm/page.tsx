@@ -37,7 +37,6 @@ import {
 import { useOrg } from "@/lib/hooks/use-org";
 import { getClientDetails } from "@/app/actions/clients";
 import { createClient } from "@/lib/supabase/client";
-import { cachedFetch, invalidateCache } from "@/lib/cache-utils";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 
@@ -208,11 +207,6 @@ const CARE_COLUMNS: ColumnConfig[] = [
   },
 ];
 
-/** Kept for backward compat — trades columns as default */
-const COLUMNS = TRADES_COLUMNS;
-
-const COLUMN_MAP = Object.fromEntries(COLUMNS.map((c) => [c.id, c]));
-
 /* ── Helpers ─────────────────────────────────────────────── */
 
 function formatCurrency(cents: number | null): string {
@@ -264,6 +258,8 @@ export default function CRMPipelinePage() {
   const [clients, setClients] = useState<PipelineClient[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const isDraggingRef = useRef(false);
+  const dragSettledTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ── Fetch clients (TanStack Query) ───────────────────── */
 
@@ -293,8 +289,16 @@ export default function CRMPipelinePage() {
   });
 
   useEffect(() => {
-    if (fetchedClients) setClients(fetchedClients);
+    if (!fetchedClients) return;
+    if (isDraggingRef.current) return;
+    setClients(fetchedClients);
   }, [fetchedClients]);
+
+  useEffect(() => {
+    return () => {
+      if (dragSettledTimerRef.current) clearTimeout(dragSettledTimerRef.current);
+    };
+  }, []);
 
   /* ── Realtime subscription ─────────────────────────────── */
 
@@ -312,6 +316,7 @@ export default function CRMPipelinePage() {
           filter: `organization_id=eq.${orgId}`,
         },
         () => {
+          if (isDraggingRef.current) return;
           queryClient.invalidateQueries({ queryKey: queryKeys.crm.pipeline(orgId) });
         }
       )
@@ -386,42 +391,54 @@ export default function CRMPipelinePage() {
         return;
 
       const newStatus = destination.droppableId as PipelineStatus;
-      const oldStatus = source.droppableId as PipelineStatus;
+      const snapshot = clients;
 
-      // Optimistic update
-      setClients((prev) =>
-        prev.map((c) =>
-          c.id === draggableId
-            ? {
-                ...c,
-                pipeline_status: newStatus,
-                pipeline_updated_at: new Date().toISOString(),
-              }
-            : c
-        )
-      );
+      isDraggingRef.current = true;
+      if (dragSettledTimerRef.current) clearTimeout(dragSettledTimerRef.current);
 
-      const supabase = createClient();
-      const { error } = await (supabase.from("clients") as any)
-        .update({
-          pipeline_status: newStatus,
-          pipeline_updated_at: new Date().toISOString(),
-        })
-        .eq("id", draggableId);
-
-      if (error) {
-        // Revert on failure
+      try {
+        // Optimistic update
         setClients((prev) =>
           prev.map((c) =>
             c.id === draggableId
-              ? { ...c, pipeline_status: oldStatus }
+              ? {
+                  ...c,
+                  pipeline_status: newStatus,
+                  pipeline_updated_at: new Date().toISOString(),
+                }
               : c
           )
         );
-        addToast("Failed to update pipeline stage");
+
+        const supabase = createClient();
+        const { error } = await (supabase.from("clients") as any)
+          .update({
+            pipeline_status: newStatus,
+            pipeline_updated_at: new Date().toISOString(),
+          })
+          .eq("id", draggableId);
+
+        if (error) {
+          throw error;
+        }
+      } catch (error) {
+        // Precise rollback: restore the full pre-drag snapshot
+        setClients(snapshot);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to update pipeline stage";
+        addToast(`Failed to update pipeline stage: ${message}`, undefined, "error");
+      } finally {
+        dragSettledTimerRef.current = setTimeout(() => {
+          isDraggingRef.current = false;
+          if (orgId) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.crm.pipeline(orgId) });
+          }
+        }, 250);
       }
     },
-    [addToast]
+    [addToast, clients, orgId, queryClient]
   );
 
   /* ── Add lead handler ──────────────────────────────────── */
@@ -845,7 +862,7 @@ function PipelineCard({
 function KanbanSkeleton() {
   return (
     <div className="flex h-full gap-3">
-      {COLUMNS.map((col) => (
+      {TRADES_COLUMNS.map((col) => (
         <div
           key={col.id}
           className="flex h-full w-[280px] min-w-[280px] flex-col"

@@ -203,7 +203,12 @@ function RuleCard({
   onUpdate: (eventType: NotificationEventType, updates: Partial<CommunicationRule>) => void;
   saving: boolean;
 }) {
-  const meta = EVENT_TYPE_META[rule.event_type];
+  const meta = EVENT_TYPE_META[rule.event_type] ?? {
+    label: rule.event_type ?? "Unknown Event",
+    description: "Event configuration",
+    sector: "dispatch",
+    templateVars: [],
+  };
   const Icon = EVENT_ICONS[rule.event_type] || FileText;
   const [expanded, setExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -330,7 +335,7 @@ function RuleCard({
                   <span className="text-xs text-zinc-500 mr-1">
                     Insert variable:
                   </span>
-                  {meta.templateVars.map((v) => (
+                  {(meta.templateVars ?? []).map((v) => (
                     <VariablePill
                       key={v}
                       variable={v}
@@ -393,9 +398,9 @@ function DispatchLogsPanel({ orgId }: { orgId: string }) {
   }, [loadLogs]);
 
   const filteredLogs = useMemo(() => {
-    if (!searchFilter) return logs;
+    if (!searchFilter) return logs ?? [];
     const q = searchFilter.toLowerCase();
-    return logs.filter(
+    return (logs ?? []).filter(
       (l) =>
         l.to_address?.toLowerCase().includes(q) ||
         l.recipient_phone?.toLowerCase().includes(q) ||
@@ -492,8 +497,8 @@ function DispatchLogsPanel({ orgId }: { orgId: string }) {
               </div>
               <div className="text-zinc-400 text-xs truncate">
                 {log.event_type
-                  ? EVENT_TYPE_META[log.event_type as NotificationEventType]?.label ||
-                    log.event_type
+                  ? (EVENT_TYPE_META[log.event_type as NotificationEventType]?.label ??
+                    log.event_type)
                   : "—"}
               </div>
               <div className="text-zinc-400 text-xs uppercase">{log.channel}</div>
@@ -685,8 +690,8 @@ export default function CommunicationsSettingsPage() {
   // ─── Group rules by sector ──────────────────────────────────────
   const groupedRules = useMemo(() => {
     const groups: Record<string, CommunicationRule[]> = {};
-    for (const rule of rules) {
-      const sector = EVENT_TYPE_META[rule.event_type]?.sector || "dispatch";
+    for (const rule of rules ?? []) {
+      const sector = EVENT_TYPE_META[rule.event_type]?.sector ?? "dispatch";
       if (!groups[sector]) groups[sector] = [];
       groups[sector].push(rule);
     }

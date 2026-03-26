@@ -130,6 +130,56 @@ To move from `iworkr-stack.vercel.app` to a custom domain:
 
 ---
 
+## 8. Auth + Payments Production Checklist (Genesis-Protocol)
+
+Use this checklist when validating `AUTH-027` and `QA-PAYMENT-04`.
+
+### 8.1 Supabase Auth (Magic Links + SMTP)
+
+1. In Supabase Dashboard, open **Authentication -> URL Configuration**.
+2. Set **Site URL** to your canonical app domain (for example `https://iworkrapp.com`).
+3. Add all required domains to **Additional Redirect URLs** (production + preview), for example:
+   - `https://iworkrapp.com/*`
+   - `https://www.iworkrapp.com/*`
+   - `https://*.vercel.app/*`
+4. In **Authentication -> SMTP Settings**, configure custom SMTP (Resend/SendGrid/Postmark):
+   - Host, port, username, password
+   - Sender email/domain aligned with SPF/DKIM
+5. Send a test magic link from `/auth` and verify:
+   - Email delivered within expected window
+   - Link lands on correct domain
+   - Session is established and redirected to app
+
+Pass criteria:
+- No silent email drops
+- No domain mismatch redirects
+- No auth loop after opening magic link
+
+### 8.2 Stripe Checkout Guardrails (SetupIntent vs PaymentIntent)
+
+1. Confirm environment variables in Vercel:
+   - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (`pk_test_...` in QA, `pk_live_...` in prod)
+   - `STRIPE_SECRET_KEY` (`sk_test_...` in QA, `sk_live_...` in prod)
+   - `STRIPE_WEBHOOK_SECRET` matches deployed webhook endpoint
+2. Verify checkout API returns:
+   - `clientSecret` (non-empty string)
+   - `type` (`setup` or `payment`)
+3. Validate intent consistency:
+   - SetupIntent secrets begin with `seti_`
+   - PaymentIntent secrets begin with `pi_`
+4. Run QA cards in test mode:
+   - Success path
+   - Decline path
+   - Incomplete/retry recovery path
+5. Confirm webhook events process and subscription state updates in DB.
+
+Pass criteria:
+- Elements mounts only when publishable key and client secret are valid
+- `confirmSetup`/`confirmPayment` path matches returned intent
+- Billing status converges after webhook processing
+
+---
+
 ## Files Changed
 
 | File | Purpose |

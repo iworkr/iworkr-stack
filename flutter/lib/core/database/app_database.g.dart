@@ -8690,6 +8690,895 @@ class LocalMedicationRecordsCompanion
   }
 }
 
+class $LocalComplianceRulesTable extends LocalComplianceRules
+    with TableInfo<$LocalComplianceRulesTable, LocalComplianceRule> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalComplianceRulesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _organizationIdMeta = const VerificationMeta(
+    'organizationId',
+  );
+  @override
+  late final GeneratedColumn<String> organizationId = GeneratedColumn<String>(
+    'organization_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _triggerStateMeta = const VerificationMeta(
+    'triggerState',
+  );
+  @override
+  late final GeneratedColumn<String> triggerState = GeneratedColumn<String>(
+    'trigger_state',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ruleTypeMeta = const VerificationMeta(
+    'ruleType',
+  );
+  @override
+  late final GeneratedColumn<String> ruleType = GeneratedColumn<String>(
+    'rule_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _configJsonbMeta = const VerificationMeta(
+    'configJsonb',
+  );
+  @override
+  late final GeneratedColumn<String> configJsonb = GeneratedColumn<String>(
+    'config_jsonb',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  static const VerificationMeta _targetEntityTypeMeta = const VerificationMeta(
+    'targetEntityType',
+  );
+  @override
+  late final GeneratedColumn<String> targetEntityType = GeneratedColumn<String>(
+    'target_entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('GLOBAL'),
+  );
+  static const VerificationMeta _targetEntityIdMeta = const VerificationMeta(
+    'targetEntityId',
+  );
+  @override
+  late final GeneratedColumn<String> targetEntityId = GeneratedColumn<String>(
+    'target_entity_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetLabelMeta = const VerificationMeta(
+    'targetLabel',
+  );
+  @override
+  late final GeneratedColumn<String> targetLabel = GeneratedColumn<String>(
+    'target_label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isHardBlockMeta = const VerificationMeta(
+    'isHardBlock',
+  );
+  @override
+  late final GeneratedColumn<bool> isHardBlock = GeneratedColumn<bool>(
+    'is_hard_block',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_hard_block" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _priorityMeta = const VerificationMeta(
+    'priority',
+  );
+  @override
+  late final GeneratedColumn<int> priority = GeneratedColumn<int>(
+    'priority',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    organizationId,
+    name,
+    description,
+    triggerState,
+    ruleType,
+    configJsonb,
+    targetEntityType,
+    targetEntityId,
+    targetLabel,
+    isHardBlock,
+    isActive,
+    priority,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_compliance_rules';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalComplianceRule> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('organization_id')) {
+      context.handle(
+        _organizationIdMeta,
+        organizationId.isAcceptableOrUnknown(
+          data['organization_id']!,
+          _organizationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_organizationIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('trigger_state')) {
+      context.handle(
+        _triggerStateMeta,
+        triggerState.isAcceptableOrUnknown(
+          data['trigger_state']!,
+          _triggerStateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_triggerStateMeta);
+    }
+    if (data.containsKey('rule_type')) {
+      context.handle(
+        _ruleTypeMeta,
+        ruleType.isAcceptableOrUnknown(data['rule_type']!, _ruleTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleTypeMeta);
+    }
+    if (data.containsKey('config_jsonb')) {
+      context.handle(
+        _configJsonbMeta,
+        configJsonb.isAcceptableOrUnknown(
+          data['config_jsonb']!,
+          _configJsonbMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_entity_type')) {
+      context.handle(
+        _targetEntityTypeMeta,
+        targetEntityType.isAcceptableOrUnknown(
+          data['target_entity_type']!,
+          _targetEntityTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_entity_id')) {
+      context.handle(
+        _targetEntityIdMeta,
+        targetEntityId.isAcceptableOrUnknown(
+          data['target_entity_id']!,
+          _targetEntityIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_label')) {
+      context.handle(
+        _targetLabelMeta,
+        targetLabel.isAcceptableOrUnknown(
+          data['target_label']!,
+          _targetLabelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_hard_block')) {
+      context.handle(
+        _isHardBlockMeta,
+        isHardBlock.isAcceptableOrUnknown(
+          data['is_hard_block']!,
+          _isHardBlockMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('priority')) {
+      context.handle(
+        _priorityMeta,
+        priority.isAcceptableOrUnknown(data['priority']!, _priorityMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LocalComplianceRule map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalComplianceRule(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      organizationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}organization_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      triggerState: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}trigger_state'],
+      )!,
+      ruleType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_type'],
+      )!,
+      configJsonb: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_jsonb'],
+      )!,
+      targetEntityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_entity_type'],
+      )!,
+      targetEntityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_entity_id'],
+      ),
+      targetLabel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_label'],
+      ),
+      isHardBlock: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_hard_block'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      priority: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}priority'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalComplianceRulesTable createAlias(String alias) {
+    return $LocalComplianceRulesTable(attachedDatabase, alias);
+  }
+}
+
+class LocalComplianceRule extends DataClass
+    implements Insertable<LocalComplianceRule> {
+  final String id;
+  final String organizationId;
+  final String name;
+  final String? description;
+  final String triggerState;
+  final String ruleType;
+  final String configJsonb;
+  final String targetEntityType;
+  final String? targetEntityId;
+  final String? targetLabel;
+  final bool isHardBlock;
+  final bool isActive;
+  final int priority;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const LocalComplianceRule({
+    required this.id,
+    required this.organizationId,
+    required this.name,
+    this.description,
+    required this.triggerState,
+    required this.ruleType,
+    required this.configJsonb,
+    required this.targetEntityType,
+    this.targetEntityId,
+    this.targetLabel,
+    required this.isHardBlock,
+    required this.isActive,
+    required this.priority,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['organization_id'] = Variable<String>(organizationId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['trigger_state'] = Variable<String>(triggerState);
+    map['rule_type'] = Variable<String>(ruleType);
+    map['config_jsonb'] = Variable<String>(configJsonb);
+    map['target_entity_type'] = Variable<String>(targetEntityType);
+    if (!nullToAbsent || targetEntityId != null) {
+      map['target_entity_id'] = Variable<String>(targetEntityId);
+    }
+    if (!nullToAbsent || targetLabel != null) {
+      map['target_label'] = Variable<String>(targetLabel);
+    }
+    map['is_hard_block'] = Variable<bool>(isHardBlock);
+    map['is_active'] = Variable<bool>(isActive);
+    map['priority'] = Variable<int>(priority);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LocalComplianceRulesCompanion toCompanion(bool nullToAbsent) {
+    return LocalComplianceRulesCompanion(
+      id: Value(id),
+      organizationId: Value(organizationId),
+      name: Value(name),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      triggerState: Value(triggerState),
+      ruleType: Value(ruleType),
+      configJsonb: Value(configJsonb),
+      targetEntityType: Value(targetEntityType),
+      targetEntityId: targetEntityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetEntityId),
+      targetLabel: targetLabel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetLabel),
+      isHardBlock: Value(isHardBlock),
+      isActive: Value(isActive),
+      priority: Value(priority),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalComplianceRule.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalComplianceRule(
+      id: serializer.fromJson<String>(json['id']),
+      organizationId: serializer.fromJson<String>(json['organizationId']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String?>(json['description']),
+      triggerState: serializer.fromJson<String>(json['triggerState']),
+      ruleType: serializer.fromJson<String>(json['ruleType']),
+      configJsonb: serializer.fromJson<String>(json['configJsonb']),
+      targetEntityType: serializer.fromJson<String>(json['targetEntityType']),
+      targetEntityId: serializer.fromJson<String?>(json['targetEntityId']),
+      targetLabel: serializer.fromJson<String?>(json['targetLabel']),
+      isHardBlock: serializer.fromJson<bool>(json['isHardBlock']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      priority: serializer.fromJson<int>(json['priority']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'organizationId': serializer.toJson<String>(organizationId),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String?>(description),
+      'triggerState': serializer.toJson<String>(triggerState),
+      'ruleType': serializer.toJson<String>(ruleType),
+      'configJsonb': serializer.toJson<String>(configJsonb),
+      'targetEntityType': serializer.toJson<String>(targetEntityType),
+      'targetEntityId': serializer.toJson<String?>(targetEntityId),
+      'targetLabel': serializer.toJson<String?>(targetLabel),
+      'isHardBlock': serializer.toJson<bool>(isHardBlock),
+      'isActive': serializer.toJson<bool>(isActive),
+      'priority': serializer.toJson<int>(priority),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  LocalComplianceRule copyWith({
+    String? id,
+    String? organizationId,
+    String? name,
+    Value<String?> description = const Value.absent(),
+    String? triggerState,
+    String? ruleType,
+    String? configJsonb,
+    String? targetEntityType,
+    Value<String?> targetEntityId = const Value.absent(),
+    Value<String?> targetLabel = const Value.absent(),
+    bool? isHardBlock,
+    bool? isActive,
+    int? priority,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => LocalComplianceRule(
+    id: id ?? this.id,
+    organizationId: organizationId ?? this.organizationId,
+    name: name ?? this.name,
+    description: description.present ? description.value : this.description,
+    triggerState: triggerState ?? this.triggerState,
+    ruleType: ruleType ?? this.ruleType,
+    configJsonb: configJsonb ?? this.configJsonb,
+    targetEntityType: targetEntityType ?? this.targetEntityType,
+    targetEntityId: targetEntityId.present
+        ? targetEntityId.value
+        : this.targetEntityId,
+    targetLabel: targetLabel.present ? targetLabel.value : this.targetLabel,
+    isHardBlock: isHardBlock ?? this.isHardBlock,
+    isActive: isActive ?? this.isActive,
+    priority: priority ?? this.priority,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalComplianceRule copyWithCompanion(LocalComplianceRulesCompanion data) {
+    return LocalComplianceRule(
+      id: data.id.present ? data.id.value : this.id,
+      organizationId: data.organizationId.present
+          ? data.organizationId.value
+          : this.organizationId,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      triggerState: data.triggerState.present
+          ? data.triggerState.value
+          : this.triggerState,
+      ruleType: data.ruleType.present ? data.ruleType.value : this.ruleType,
+      configJsonb: data.configJsonb.present
+          ? data.configJsonb.value
+          : this.configJsonb,
+      targetEntityType: data.targetEntityType.present
+          ? data.targetEntityType.value
+          : this.targetEntityType,
+      targetEntityId: data.targetEntityId.present
+          ? data.targetEntityId.value
+          : this.targetEntityId,
+      targetLabel: data.targetLabel.present
+          ? data.targetLabel.value
+          : this.targetLabel,
+      isHardBlock: data.isHardBlock.present
+          ? data.isHardBlock.value
+          : this.isHardBlock,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      priority: data.priority.present ? data.priority.value : this.priority,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalComplianceRule(')
+          ..write('id: $id, ')
+          ..write('organizationId: $organizationId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('triggerState: $triggerState, ')
+          ..write('ruleType: $ruleType, ')
+          ..write('configJsonb: $configJsonb, ')
+          ..write('targetEntityType: $targetEntityType, ')
+          ..write('targetEntityId: $targetEntityId, ')
+          ..write('targetLabel: $targetLabel, ')
+          ..write('isHardBlock: $isHardBlock, ')
+          ..write('isActive: $isActive, ')
+          ..write('priority: $priority, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    organizationId,
+    name,
+    description,
+    triggerState,
+    ruleType,
+    configJsonb,
+    targetEntityType,
+    targetEntityId,
+    targetLabel,
+    isHardBlock,
+    isActive,
+    priority,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalComplianceRule &&
+          other.id == this.id &&
+          other.organizationId == this.organizationId &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.triggerState == this.triggerState &&
+          other.ruleType == this.ruleType &&
+          other.configJsonb == this.configJsonb &&
+          other.targetEntityType == this.targetEntityType &&
+          other.targetEntityId == this.targetEntityId &&
+          other.targetLabel == this.targetLabel &&
+          other.isHardBlock == this.isHardBlock &&
+          other.isActive == this.isActive &&
+          other.priority == this.priority &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalComplianceRulesCompanion
+    extends UpdateCompanion<LocalComplianceRule> {
+  final Value<String> id;
+  final Value<String> organizationId;
+  final Value<String> name;
+  final Value<String?> description;
+  final Value<String> triggerState;
+  final Value<String> ruleType;
+  final Value<String> configJsonb;
+  final Value<String> targetEntityType;
+  final Value<String?> targetEntityId;
+  final Value<String?> targetLabel;
+  final Value<bool> isHardBlock;
+  final Value<bool> isActive;
+  final Value<int> priority;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LocalComplianceRulesCompanion({
+    this.id = const Value.absent(),
+    this.organizationId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.triggerState = const Value.absent(),
+    this.ruleType = const Value.absent(),
+    this.configJsonb = const Value.absent(),
+    this.targetEntityType = const Value.absent(),
+    this.targetEntityId = const Value.absent(),
+    this.targetLabel = const Value.absent(),
+    this.isHardBlock = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.priority = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalComplianceRulesCompanion.insert({
+    required String id,
+    required String organizationId,
+    required String name,
+    this.description = const Value.absent(),
+    required String triggerState,
+    required String ruleType,
+    this.configJsonb = const Value.absent(),
+    this.targetEntityType = const Value.absent(),
+    this.targetEntityId = const Value.absent(),
+    this.targetLabel = const Value.absent(),
+    this.isHardBlock = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.priority = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       organizationId = Value(organizationId),
+       name = Value(name),
+       triggerState = Value(triggerState),
+       ruleType = Value(ruleType),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalComplianceRule> custom({
+    Expression<String>? id,
+    Expression<String>? organizationId,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<String>? triggerState,
+    Expression<String>? ruleType,
+    Expression<String>? configJsonb,
+    Expression<String>? targetEntityType,
+    Expression<String>? targetEntityId,
+    Expression<String>? targetLabel,
+    Expression<bool>? isHardBlock,
+    Expression<bool>? isActive,
+    Expression<int>? priority,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (organizationId != null) 'organization_id': organizationId,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (triggerState != null) 'trigger_state': triggerState,
+      if (ruleType != null) 'rule_type': ruleType,
+      if (configJsonb != null) 'config_jsonb': configJsonb,
+      if (targetEntityType != null) 'target_entity_type': targetEntityType,
+      if (targetEntityId != null) 'target_entity_id': targetEntityId,
+      if (targetLabel != null) 'target_label': targetLabel,
+      if (isHardBlock != null) 'is_hard_block': isHardBlock,
+      if (isActive != null) 'is_active': isActive,
+      if (priority != null) 'priority': priority,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalComplianceRulesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? organizationId,
+    Value<String>? name,
+    Value<String?>? description,
+    Value<String>? triggerState,
+    Value<String>? ruleType,
+    Value<String>? configJsonb,
+    Value<String>? targetEntityType,
+    Value<String?>? targetEntityId,
+    Value<String?>? targetLabel,
+    Value<bool>? isHardBlock,
+    Value<bool>? isActive,
+    Value<int>? priority,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalComplianceRulesCompanion(
+      id: id ?? this.id,
+      organizationId: organizationId ?? this.organizationId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      triggerState: triggerState ?? this.triggerState,
+      ruleType: ruleType ?? this.ruleType,
+      configJsonb: configJsonb ?? this.configJsonb,
+      targetEntityType: targetEntityType ?? this.targetEntityType,
+      targetEntityId: targetEntityId ?? this.targetEntityId,
+      targetLabel: targetLabel ?? this.targetLabel,
+      isHardBlock: isHardBlock ?? this.isHardBlock,
+      isActive: isActive ?? this.isActive,
+      priority: priority ?? this.priority,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (organizationId.present) {
+      map['organization_id'] = Variable<String>(organizationId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (triggerState.present) {
+      map['trigger_state'] = Variable<String>(triggerState.value);
+    }
+    if (ruleType.present) {
+      map['rule_type'] = Variable<String>(ruleType.value);
+    }
+    if (configJsonb.present) {
+      map['config_jsonb'] = Variable<String>(configJsonb.value);
+    }
+    if (targetEntityType.present) {
+      map['target_entity_type'] = Variable<String>(targetEntityType.value);
+    }
+    if (targetEntityId.present) {
+      map['target_entity_id'] = Variable<String>(targetEntityId.value);
+    }
+    if (targetLabel.present) {
+      map['target_label'] = Variable<String>(targetLabel.value);
+    }
+    if (isHardBlock.present) {
+      map['is_hard_block'] = Variable<bool>(isHardBlock.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (priority.present) {
+      map['priority'] = Variable<int>(priority.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalComplianceRulesCompanion(')
+          ..write('id: $id, ')
+          ..write('organizationId: $organizationId, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('triggerState: $triggerState, ')
+          ..write('ruleType: $ruleType, ')
+          ..write('configJsonb: $configJsonb, ')
+          ..write('targetEntityType: $targetEntityType, ')
+          ..write('targetEntityId: $targetEntityId, ')
+          ..write('targetLabel: $targetLabel, ')
+          ..write('isHardBlock: $isHardBlock, ')
+          ..write('isActive: $isActive, ')
+          ..write('priority: $priority, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SyncQueueTable extends SyncQueue
     with TableInfo<$SyncQueueTable, SyncQueueData> {
   @override
@@ -10637,6 +11526,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $LocalMedicationRecordsTable localMedicationRecords =
       $LocalMedicationRecordsTable(this);
+  late final $LocalComplianceRulesTable localComplianceRules =
+      $LocalComplianceRulesTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   late final $UploadQueueTable uploadQueue = $UploadQueueTable(this);
   late final $TelemetryLogsTable telemetryLogs = $TelemetryLogsTable(this);
@@ -10656,6 +11547,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     localInventoryItems,
     localShiftNotes,
     localMedicationRecords,
+    localComplianceRules,
     syncQueue,
     uploadQueue,
     telemetryLogs,
@@ -14723,6 +15615,428 @@ typedef $$LocalMedicationRecordsTableProcessedTableManager =
       LocalMedicationRecord,
       PrefetchHooks Function()
     >;
+typedef $$LocalComplianceRulesTableCreateCompanionBuilder =
+    LocalComplianceRulesCompanion Function({
+      required String id,
+      required String organizationId,
+      required String name,
+      Value<String?> description,
+      required String triggerState,
+      required String ruleType,
+      Value<String> configJsonb,
+      Value<String> targetEntityType,
+      Value<String?> targetEntityId,
+      Value<String?> targetLabel,
+      Value<bool> isHardBlock,
+      Value<bool> isActive,
+      Value<int> priority,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalComplianceRulesTableUpdateCompanionBuilder =
+    LocalComplianceRulesCompanion Function({
+      Value<String> id,
+      Value<String> organizationId,
+      Value<String> name,
+      Value<String?> description,
+      Value<String> triggerState,
+      Value<String> ruleType,
+      Value<String> configJsonb,
+      Value<String> targetEntityType,
+      Value<String?> targetEntityId,
+      Value<String?> targetLabel,
+      Value<bool> isHardBlock,
+      Value<bool> isActive,
+      Value<int> priority,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalComplianceRulesTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalComplianceRulesTable> {
+  $$LocalComplianceRulesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get organizationId => $composableBuilder(
+    column: $table.organizationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get triggerState => $composableBuilder(
+    column: $table.triggerState,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ruleType => $composableBuilder(
+    column: $table.ruleType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configJsonb => $composableBuilder(
+    column: $table.configJsonb,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetEntityType => $composableBuilder(
+    column: $table.targetEntityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetEntityId => $composableBuilder(
+    column: $table.targetEntityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetLabel => $composableBuilder(
+    column: $table.targetLabel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isHardBlock => $composableBuilder(
+    column: $table.isHardBlock,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalComplianceRulesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalComplianceRulesTable> {
+  $$LocalComplianceRulesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get organizationId => $composableBuilder(
+    column: $table.organizationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get triggerState => $composableBuilder(
+    column: $table.triggerState,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ruleType => $composableBuilder(
+    column: $table.ruleType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configJsonb => $composableBuilder(
+    column: $table.configJsonb,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetEntityType => $composableBuilder(
+    column: $table.targetEntityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetEntityId => $composableBuilder(
+    column: $table.targetEntityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetLabel => $composableBuilder(
+    column: $table.targetLabel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isHardBlock => $composableBuilder(
+    column: $table.isHardBlock,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get priority => $composableBuilder(
+    column: $table.priority,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalComplianceRulesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalComplianceRulesTable> {
+  $$LocalComplianceRulesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get organizationId => $composableBuilder(
+    column: $table.organizationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get triggerState => $composableBuilder(
+    column: $table.triggerState,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get ruleType =>
+      $composableBuilder(column: $table.ruleType, builder: (column) => column);
+
+  GeneratedColumn<String> get configJsonb => $composableBuilder(
+    column: $table.configJsonb,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetEntityType => $composableBuilder(
+    column: $table.targetEntityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetEntityId => $composableBuilder(
+    column: $table.targetEntityId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetLabel => $composableBuilder(
+    column: $table.targetLabel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isHardBlock => $composableBuilder(
+    column: $table.isHardBlock,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<int> get priority =>
+      $composableBuilder(column: $table.priority, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalComplianceRulesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalComplianceRulesTable,
+          LocalComplianceRule,
+          $$LocalComplianceRulesTableFilterComposer,
+          $$LocalComplianceRulesTableOrderingComposer,
+          $$LocalComplianceRulesTableAnnotationComposer,
+          $$LocalComplianceRulesTableCreateCompanionBuilder,
+          $$LocalComplianceRulesTableUpdateCompanionBuilder,
+          (
+            LocalComplianceRule,
+            BaseReferences<
+              _$AppDatabase,
+              $LocalComplianceRulesTable,
+              LocalComplianceRule
+            >,
+          ),
+          LocalComplianceRule,
+          PrefetchHooks Function()
+        > {
+  $$LocalComplianceRulesTableTableManager(
+    _$AppDatabase db,
+    $LocalComplianceRulesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalComplianceRulesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalComplianceRulesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LocalComplianceRulesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> organizationId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<String> triggerState = const Value.absent(),
+                Value<String> ruleType = const Value.absent(),
+                Value<String> configJsonb = const Value.absent(),
+                Value<String> targetEntityType = const Value.absent(),
+                Value<String?> targetEntityId = const Value.absent(),
+                Value<String?> targetLabel = const Value.absent(),
+                Value<bool> isHardBlock = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalComplianceRulesCompanion(
+                id: id,
+                organizationId: organizationId,
+                name: name,
+                description: description,
+                triggerState: triggerState,
+                ruleType: ruleType,
+                configJsonb: configJsonb,
+                targetEntityType: targetEntityType,
+                targetEntityId: targetEntityId,
+                targetLabel: targetLabel,
+                isHardBlock: isHardBlock,
+                isActive: isActive,
+                priority: priority,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String organizationId,
+                required String name,
+                Value<String?> description = const Value.absent(),
+                required String triggerState,
+                required String ruleType,
+                Value<String> configJsonb = const Value.absent(),
+                Value<String> targetEntityType = const Value.absent(),
+                Value<String?> targetEntityId = const Value.absent(),
+                Value<String?> targetLabel = const Value.absent(),
+                Value<bool> isHardBlock = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> priority = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalComplianceRulesCompanion.insert(
+                id: id,
+                organizationId: organizationId,
+                name: name,
+                description: description,
+                triggerState: triggerState,
+                ruleType: ruleType,
+                configJsonb: configJsonb,
+                targetEntityType: targetEntityType,
+                targetEntityId: targetEntityId,
+                targetLabel: targetLabel,
+                isHardBlock: isHardBlock,
+                isActive: isActive,
+                priority: priority,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalComplianceRulesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalComplianceRulesTable,
+      LocalComplianceRule,
+      $$LocalComplianceRulesTableFilterComposer,
+      $$LocalComplianceRulesTableOrderingComposer,
+      $$LocalComplianceRulesTableAnnotationComposer,
+      $$LocalComplianceRulesTableCreateCompanionBuilder,
+      $$LocalComplianceRulesTableUpdateCompanionBuilder,
+      (
+        LocalComplianceRule,
+        BaseReferences<
+          _$AppDatabase,
+          $LocalComplianceRulesTable,
+          LocalComplianceRule
+        >,
+      ),
+      LocalComplianceRule,
+      PrefetchHooks Function()
+    >;
 typedef $$SyncQueueTableCreateCompanionBuilder =
     SyncQueueCompanion Function({
       required String id,
@@ -15743,6 +17057,8 @@ class $AppDatabaseManager {
         _db,
         _db.localMedicationRecords,
       );
+  $$LocalComplianceRulesTableTableManager get localComplianceRules =>
+      $$LocalComplianceRulesTableTableManager(_db, _db.localComplianceRules);
   $$SyncQueueTableTableManager get syncQueue =>
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
   $$UploadQueueTableTableManager get uploadQueue =>

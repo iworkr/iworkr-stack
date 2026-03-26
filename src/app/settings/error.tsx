@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, RefreshCw, LifeBuoy } from "lucide-react";
+import { AlertTriangle, RefreshCw, LifeBuoy, Trash2 } from "lucide-react";
 
 /**
  * Settings Module Error Boundary
@@ -24,7 +24,6 @@ export default function SettingsError({
 }) {
   // Log error to telemetry (Sentry/Datadog) when available
   useEffect(() => {
-    // eslint-disable-next-line no-console
     console.error("[Settings Error Boundary]", {
       message: error.message,
       digest: error.digest,
@@ -83,22 +82,59 @@ export default function SettingsError({
         )}
 
         {/* Actions */}
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            onClick={reset}
-            className="flex items-center gap-2 rounded-lg bg-[#10B981] px-5 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:bg-[#059669] hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)]"
-          >
-            <RefreshCw size={14} strokeWidth={2} />
-            Reload Interface
-          </button>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={reset}
+              className="flex items-center gap-2 rounded-lg bg-[#10B981] px-5 py-2.5 text-[13px] font-medium text-black shadow-[0_0_20px_-6px_rgba(16,185,129,0.3)] transition-all hover:bg-[#059669] hover:shadow-[0_0_30px_-6px_rgba(16,185,129,0.4)]"
+            >
+              <RefreshCw size={14} strokeWidth={2} />
+              Reload Interface
+            </button>
 
-          <a
-            href="mailto:support@iworkr.app"
-            className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:border-white/[0.15] hover:text-zinc-200"
+            <a
+              href="mailto:support@iworkr.app"
+              className="flex items-center gap-2 rounded-lg border border-white/[0.08] px-4 py-2.5 text-[13px] font-medium text-zinc-400 transition-colors hover:border-white/[0.15] hover:text-zinc-200"
+            >
+              <LifeBuoy size={14} strokeWidth={1.5} />
+              Contact Support
+            </a>
+          </div>
+
+          {/* Panic button — Clear Local Cache */}
+          <button
+            onClick={() => {
+              const keysToWipe = [
+                "iworkr-settings",
+                "iworkr-auth",
+                "iworkr-branding",
+                "iworkr-billing",
+                "iworkr-shell",
+                "iworkr-dashboard",
+                "iworkr-onboarding",
+                "iworkr-integrations",
+                "iworkr-jobs",
+                "iworkr-clients",
+                "iworkr-finance",
+                "iworkr-schedule",
+                "iworkr-inbox",
+                "iworkr-team",
+                "iworkr-assets",
+                "iworkr-forms",
+                "iworkr-automations",
+                "iworkr-care-command",
+                "iworkr-medications",
+                "iworkr-intake-draft",
+              ];
+              keysToWipe.forEach((k) => localStorage.removeItem(k));
+              sessionStorage.clear();
+              window.location.href = "/auth/login";
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] text-zinc-600 transition-colors hover:bg-rose-500/5 hover:text-rose-400"
           >
-            <LifeBuoy size={14} strokeWidth={1.5} />
-            Contact Support
-          </a>
+            <Trash2 size={11} />
+            Clear Local Cache &amp; Sign Out
+          </button>
         </div>
       </motion.div>
     </div>

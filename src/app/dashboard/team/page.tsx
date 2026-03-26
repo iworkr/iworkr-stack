@@ -50,7 +50,6 @@ import {
   type RoleId,
 } from "@/lib/team-data";
 import { MemberDrawer } from "@/components/team/member-drawer";
-import { InviteModal } from "@/components/team/invite-modal";
 import { useToastStore } from "@/components/app/action-toast";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useBillingStore } from "@/lib/billing-store";
@@ -143,7 +142,7 @@ export default function TeamPage() {
     setFilterBranch,
     setFilterRole,
     setFilterSkill,
-    setSelectedMemberId,
+    openMemberProfile,
     setInviteModalOpen,
     suspendMemberServer,
     reactivateMemberServer,
@@ -466,7 +465,7 @@ export default function TeamPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(i * 0.02, 0.3), duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                      onClick={() => setSelectedMemberId(member.id)}
+                      onClick={() => openMemberProfile(member.id, "view")}
                       className={`group flex cursor-pointer items-center border-b border-white/5 px-5 transition-colors duration-100 hover:bg-white/[0.02] ${
                         isPending ? "opacity-60" : ""
                       } ${isSuspended ? "opacity-40" : ""}`}
@@ -597,7 +596,7 @@ export default function TeamPage() {
                       {/* Quick actions */}
                       <div className="w-20 flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100" ref={contextMenuId === member.id ? contextRef : undefined}>
                         <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedMemberId(member.id); }}
+                          onClick={(e) => { e.stopPropagation(); openMemberProfile(member.id, "edit"); }}
                           className="rounded-md p-1 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
                           title="Edit"
                         >
@@ -629,8 +628,16 @@ export default function TeamPage() {
                                 exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                 className="absolute right-0 top-7 z-30 w-44 rounded-xl border border-white/[0.06] bg-[#0C0C0C]/95 py-1 shadow-xl backdrop-blur-xl"
                               >
+                                {member.role !== "owner" && (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setContextMenuId(null); openMemberProfile(member.id, "edit"); }}
+                                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200"
+                                  >
+                                    <Pencil size={11} /> Edit Profile
+                                  </button>
+                                )}
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setContextMenuId(null); setSelectedMemberId(member.id); }}
+                                  onClick={(e) => { e.stopPropagation(); setContextMenuId(null); openMemberProfile(member.id, "view"); }}
                                   className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.03] hover:text-zinc-200"
                                 >
                                   <Eye size={11} /> View Profile
@@ -727,7 +734,7 @@ export default function TeamPage() {
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.03, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        onClick={() => setSelectedMemberId(member.id)}
+                        onClick={() => openMemberProfile(member.id, "view")}
                         className={`group cursor-pointer overflow-hidden rounded-xl bg-zinc-900/30 transition-all duration-200 hover:bg-zinc-900/40 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.06)] ${isPending ? "opacity-60" : ""}`}
                       >
                         {/* Card body */}
@@ -801,7 +808,6 @@ export default function TeamPage() {
 
       {/* ── Overlays ─────────────────────────────────────── */}
       <MemberDrawer />
-      <InviteModal />
     </div>
   );
 }

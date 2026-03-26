@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' show OrderingTerm;
+import 'package:iworkr_mobile/core/database/app_database.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
 
 class SyncIndicator extends ConsumerWidget {

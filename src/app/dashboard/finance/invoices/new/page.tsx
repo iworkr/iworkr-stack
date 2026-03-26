@@ -8,6 +8,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,8 +16,6 @@ import {
   Plus,
   Trash2,
   Send,
-  FileText,
-  CreditCard,
   ChevronDown,
   Check,
   CheckCircle,
@@ -42,6 +41,38 @@ import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import type { InvoiceData, InvoiceLineItemData, WorkspaceBrand } from "@/components/pdf/invoice-types";
 import { calcInvoiceTotals, formatCurrency } from "@/components/pdf/invoice-types";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && UUID_REGEX.test(value);
+}
+
+class PDFErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidUpdate(prevProps: { children: React.ReactNode }) {
+    if (prevProps.children !== this.props.children && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
 
 function PDFSkeleton() {
   return (
@@ -102,6 +133,8 @@ export default function InvoiceBuilderPage() {
   const storeClients = useClientsStore((s) => s.clients);
   const { createInvoiceServer } = useFinanceStore();
   const { addToast } = useToastStore();
+  const hasValidOrgContext = isUuid(orgId);
+
 
   /* Pre-fill from job if passed via query param */
   const prefillJobId = searchParams.get("job_id");
@@ -150,7 +183,7 @@ export default function InvoiceBuilderPage() {
         const { data } = await (supabase as any)
           .from("catalog_items")
           .select("description, unit_price")
-          .eq("organization_id", orgId!)
+          .eq("organization_id", orgId)
           .eq("active", true)
           .order("description")
           .limit(100);
@@ -161,8 +194,8 @@ export default function InvoiceBuilderPage() {
         // Fallback to DEFAULT_CATALOG if table doesn't exist or query fails
       }
     }
-    if (orgId) loadCatalog();
-  }, [orgId]);
+    if (hasValidOrgContext) loadCatalog();
+  }, [orgId, hasValidOrgContext]);
 
   /* ── Auto-select client from query ──────────────────────── */
   useEffect(() => {
@@ -256,7 +289,8 @@ export default function InvoiceBuilderPage() {
     [currentOrg],
   );
 
-  const isValid = !!selectedClient && lineItems.length > 0 && totals.total > 0;
+  const isValid = !!selectedClient && lineItems.length > 0 && totals.total > 0 && hasValidOrgContext;
+  const canRenderPdf = !!selectedClient && lineItems.length > 0 && totals.total > 0;
 
   /* ── Actions ────────────────────────────────────────────── */
   function addItem(desc: string, price: number) {
@@ -283,7 +317,11 @@ export default function InvoiceBuilderPage() {
 
   const handleSave = useCallback(
     async (mode: "draft" | "send") => {
-      if (!isValid || saving || !orgId) return;
+      if (!hasValidOrgContext) {
+        addToast("Workspace context not loaded. Please refresh the page.", undefined, "error");
+        return;
+      }
+      if (!isValid || saving) return;
       setSaving(true);
       try {
         const result = await createInvoiceServer({
@@ -322,7 +360,7 @@ export default function InvoiceBuilderPage() {
         setSaving(false);
       }
     },
-    [isValid, saving, orgId, selectedClient, prefillJobId, issueDate, dueDate, taxRate, notes, lineItems, createInvoiceServer, addToast, router],
+    [hasValidOrgContext, isValid, saving, orgId, selectedClient, prefillJobId, issueDate, dueDate, taxRate, notes, lineItems, createInvoiceServer, addToast, router],
   );
 
   function handleCopyLink() {
@@ -428,7 +466,7 @@ export default function InvoiceBuilderPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            disabled={!isValid || saving}
+            disabled={!isValid || saving || !hasValidOrgContext}
             onClick={() => handleSave("draft")}
             className="flex items-center gap-1.5 rounded-lg border border-[var(--border-base)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
           >
@@ -436,7 +474,7 @@ export default function InvoiceBuilderPage() {
             Save Draft
           </button>
           <button
-            disabled={!isValid || saving}
+            disabled={!isValid || saving || !hasValidOrgContext}
             onClick={() => handleSave("send")}
             className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-1.5 text-[11px] font-semibold text-black transition-all hover:bg-zinc-200 disabled:opacity-40"
           >
@@ -783,17 +821,37 @@ export default function InvoiceBuilderPage() {
             </span>
           </div>
           <div className="flex-1 overflow-auto p-4">
-            {pdfReady && (
-              <div className="rounded-lg bg-zinc-900/50" style={{ height: "100%", minHeight: 720 }}>
-                <PDFViewer
-                  width="100%"
-                  height="100%"
-                  showToolbar={false}
+            {pdfReady ? (
+              canRenderPdf ? (
+                <PDFErrorBoundary
+                  fallback={
+                    <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-[var(--border-base)] bg-zinc-950/50 p-6 text-center">
+                      <div>
+                        <p className="text-sm text-zinc-300">Preview unavailable</p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Complete the invoice details to generate preview.
+                        </p>
+                      </div>
+                    </div>
+                  }
                 >
-                <InvoiceDocument data={invoiceData} workspace={workspace} />
-                </PDFViewer>
-              </div>
-            )}
+                  <div className="rounded-lg bg-zinc-900/50" style={{ height: "100%", minHeight: 720 }}>
+                    <PDFViewer width="100%" height="100%" showToolbar={false}>
+                      <InvoiceDocument data={invoiceData} workspace={workspace} />
+                    </PDFViewer>
+                  </div>
+                </PDFErrorBoundary>
+              ) : (
+                <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-[var(--border-base)] bg-zinc-950/50 p-6 text-center">
+                  <div>
+                    <p className="text-sm text-zinc-300">Preview unavailable</p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Select a client and add at least one line item to generate preview.
+                    </p>
+                  </div>
+                </div>
+              )
+            ) : null}
           </div>
         </div>
       </div>

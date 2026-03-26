@@ -1,9 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:iworkr_mobile/core/database/app_database.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/features/compliance/services/cerberus_validator.dart';
 
@@ -102,11 +99,10 @@ class GateResult {
 // ═══════════════════════════════════════════════════════════
 
 class JobStateMachine {
-  final AppDatabase _db;
   final SyncEngine _sync;
   final CerberusValidator _cerberus;
 
-  JobStateMachine(this._db, this._sync, this._cerberus);
+  JobStateMachine(this._sync, this._cerberus);
 
   List<FieldJobState> nextStates(FieldJobState current) {
     return _fieldTransitions[current] ?? [];
@@ -262,8 +258,7 @@ class SliderConfig {
 // ═══════════════════════════════════════════════════════════
 
 final jobStateMachineProvider = Provider<JobStateMachine>((ref) {
-  final db = ref.watch(appDatabaseProvider);
   final sync = ref.watch(syncEngineProvider);
   final cerberus = ref.watch(cerberusValidatorProvider);
-  return JobStateMachine(db, sync, cerberus);
+  return JobStateMachine(sync, cerberus);
 });

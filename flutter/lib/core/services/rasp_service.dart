@@ -31,6 +31,16 @@ class RaspService {
   bool get isThreatDetected => _threatDetected;
   String? get threatReason => _threatReason;
 
+  // Must be injected at build time by CI for release artifacts.
+  static const String _signingCertHash = String.fromEnvironment(
+    'SIGNING_CERT_HASH',
+    defaultValue: '',
+  );
+  static const String _iosTeamId = String.fromEnvironment(
+    'IOS_TEAM_ID',
+    defaultValue: '',
+  );
+
   /// Initialize RASP checks. Call BEFORE runApp() in main.dart.
   /// In debug mode, emulator and debugger checks are relaxed.
   Future<void> initialize() async {
@@ -48,29 +58,33 @@ class RaspService {
         androidConfig: AndroidConfig(
           packageName: 'com.iworkr.app',
           signingCertHashes: [
-            // TODO: Replace with actual signing certificate SHA-256 hash
-            // Generate with: keytool -list -v -keystore your.keystore | grep SHA256
-            'PLACEHOLDER_SIGNING_CERT_HASH',
+            _signingCertHash,
           ],
           supportedStores: ['com.sec.android.app.samsungapps'],
         ),
         iosConfig: IOSConfig(
           bundleIds: ['com.iworkr.app'],
-          teamId: 'PLACEHOLDER_TEAM_ID', // TODO: Replace with Apple Team ID
+          teamId: _iosTeamId,
         ),
         watcherMail: 'security@iworkrapp.com',
         isProd: true,
       );
 
+      if (_signingCertHash.isEmpty || _iosTeamId.isEmpty) {
+        debugPrint('[RASP] Build defines missing: SIGNING_CERT_HASH and/or IOS_TEAM_ID');
+      }
+
       final callback = ThreatCallback(
-        onRootDetected: _onRootDetected,
-        onDebuggerDetected: _onDebuggerDetected,
-        onEmulatorDetected: _onEmulatorDetected,
-        onTamperDetected: _onTamperDetected,
-        onHookDetected: _onHookDetected,
-        onUnofficialStoreDetected: _onUnofficialStoreDetected,
-        onDeviceBindingDetected: _onDeviceBindingDetected,
-        onObfuscationIssuesDetected: _onObfuscationIssuesDetected,
+        onAppIntegrity: _onTamperDetected,
+        onObfuscationIssues: _onObfuscationIssuesDetected,
+        onDebug: _onDebuggerDetected,
+        onDeviceBinding: _onDeviceBindingDetected,
+        onDeviceID: _onDeviceBindingDetected,
+        onHooks: _onHookDetected,
+        onPrivilegedAccess: _onRootDetected,
+        onSecureHardwareNotAvailable: _onTamperDetected,
+        onSimulator: _onEmulatorDetected,
+        onUnofficialStore: _onUnofficialStoreDetected,
       );
 
       Talsec.instance.attachListener(callback);

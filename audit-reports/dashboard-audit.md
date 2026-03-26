@@ -1,9 +1,9 @@
 # Dashboard Module — Audit Report
 
-> **Generated**: 2026-03-14T14:54:10.342Z
+> **Generated**: 2026-03-26T05:24:55.601Z
 > **Module**: Dashboard (`/dashboard`)
 > **Test Framework**: Playwright
-> **Total Findings**: 29
+> **Total Findings**: 0
 
 ---
 
@@ -11,58 +11,17 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 8 |
-| 🟡 Visual Defects | 1 |
+| 🔴 Critical Failures | 0 |
+| 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 4 |
-| 🟢 Flow Passes | 16 |
+| 🟠 Warnings | 0 |
+| 🟢 Flow Passes | 0 |
 
 ---
 
 ## 🔴 Critical Failures
 
-
-### "Automations" navigation failed
-- **Widget**: Sidebar
-- **Detail**: Expected URL to contain "/dashboard/automations" but got "http://localhost:3000/dashboard"
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Error: Failed to initialize WebGL
-    at Map._setupPainter (http://localhost:3000/_next/static/chunks/7e9b8_mapbox-gl_dist_mapbox-gl_a3300777.js:48404:65)
-    at new Map (http://localhost:3000/_next/static/chunks/7e9b8_mapbox-gl_dist_mapbox-gl_a3300777.js:47686:60)
-    at DispatchMapbox.useEffect (http://localhost:3000/_next/static/chunks/Development_STACK_iWorkr-Linear_src_cd925679._.js:1642:33)
-
-
-### Console error detected
-- **Widget**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-
-
-### HTTP 500 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
-
-
-### HTTP 500 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
+_No critical failures found._
 
 
 
@@ -70,10 +29,7 @@
 
 ## 🟡 Visual Defects
 
-
-### Background color unexpected
-- **Widget**: Style
-- **Detail**: Body background is rgb(5, 5, 5) — expected pure black (#000).
+_No visual defects found._
 
 
 
@@ -89,44 +45,15 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
+_No warnings._
 
-### ⌘K shortcut may not work in test
-- **Widget**: Topbar
-- **Detail**: Could not detect command menu after ⌘K — may be a Playwright focus issue.
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
-
-### HTTP 404 response
-- **Widget**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
-
-### 'C' shortcut unclear
-- **Widget**: Shortcuts
-- **Detail**: Could not detect create job modal after pressing 'C'.
 
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Sidebar]** "My Jobs" → /dashboard/jobs: Navigation successful.
-- ✅ **[Sidebar]** "Schedule" → /dashboard/schedule: Navigation successful.
-- ✅ **[Sidebar]** "Messages" → /dashboard/inbox: Navigation successful.
-- ✅ **[Sidebar]** "Clients" → /dashboard/clients: Navigation successful.
-- ✅ **[Sidebar]** "Finance" → /dashboard/finance: Navigation successful.
-- ✅ **[Sidebar]** "Assets" → /dashboard/assets: Navigation successful.
-- ✅ **[Sidebar]** "Forms" → /dashboard/forms: Navigation successful.
-- ✅ **[Sidebar]** "Team" → /dashboard/team: Navigation successful.
-- ✅ **[Topbar]** Search trigger visible: ⌘K search bar trigger is rendered in the topbar.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 20 buttons — all have cursor: pointer.
-- ✅ **[Style]** Inter font applied: Font family: inter, "inter Fallback"
-- ✅ **[Style]** No default blue links: All 15 checked links have custom themed colors.
-- ✅ **[Shortcuts]** '?' opens keyboard shortcuts: Keyboard shortcuts modal opens correctly.
-- ✅ **[Responsive]** Desktop layout (1440px) renders: Bento grid visible at desktop width.
-- ✅ **[Responsive]** Tablet layout (768px) renders: Grid adjusts to 2-column layout.
-- ✅ **[Responsive]** Mobile layout (375px) renders: Grid collapses to single column on mobile.
+
 
 ---
 

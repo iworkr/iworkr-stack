@@ -10,8 +10,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { validate, uuidSchema, emailSchema, phoneSchema } from "@/lib/validation";
+import { validate } from "@/lib/validation";
+import { BranchCreateSchema, BranchUpdateSchema } from "@/lib/validations/branch";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -35,35 +35,6 @@ export interface Branch {
 }
 
 /* ── Schemas ──────────────────────────────────────── */
-
-const CreateBranchSchema = z.object({
-  organization_id: uuidSchema,
-  name: z.string().min(1, "Name is required").max(100),
-  address: z.string().max(500).optional(),
-  city: z.string().max(100).optional(),
-  state: z.string().max(100).optional(),
-  postal_code: z.string().max(20).optional(),
-  timezone: z.string().max(50).optional(),
-  phone: phoneSchema,
-  email: emailSchema.optional().or(z.literal("")),
-  tax_rate: z.number().min(0).max(100).optional(),
-});
-
-const UpdateBranchSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  address: z.string().max(500).optional().nullable(),
-  city: z.string().max(100).optional().nullable(),
-  state: z.string().max(100).optional().nullable(),
-  postal_code: z.string().max(20).optional().nullable(),
-  country: z.string().max(100).optional(),
-  timezone: z.string().max(50).optional(),
-  phone: phoneSchema.nullable(),
-  email: emailSchema.optional().nullable().or(z.literal("")),
-  tax_rate: z.number().min(0).max(100).optional(),
-  is_headquarters: z.boolean().optional(),
-  ai_agent_phone: z.string().max(30).optional().nullable(),
-  status: z.enum(["active", "inactive"]).optional(),
-});
 
 /* ── CRUD ─────────────────────────────────────────── */
 
@@ -112,7 +83,7 @@ export async function createBranch(params: {
 }): Promise<{ data: Branch | null; error?: string }> {
   try {
     // Validate input
-    const validated = validate(CreateBranchSchema, params);
+    const validated = validate(BranchCreateSchema, params);
     if (validated.error) return { data: null, error: validated.error };
 
     const supabase = await createServerSupabaseClient();
@@ -128,10 +99,30 @@ export async function createBranch(params: {
       .maybeSingle();
     if (!membership) return { data: null, error: "Unauthorized" };
 
+    const rpcClient = supabase as any;
+    const { data: rpcData, error: rpcError } = await rpcClient.rpc("create_branch", {
+      p_workspace_id: params.organization_id,
+      p_name: params.name,
+      p_city: params.city ?? null,
+      p_timezone: params.timezone ?? "Australia/Sydney",
+      p_tax_rate: params.tax_rate ?? 10,
+      p_location_lat: null,
+      p_location_lng: null,
+      p_address: params.address ?? null,
+      p_state: params.state ?? null,
+      p_postal_code: params.postal_code ?? null,
+      p_phone: params.phone ?? null,
+      p_email: params.email ?? null,
+    });
+
+    if (rpcError) return { data: null, error: rpcError.message };
+    const createdId = typeof rpcData === "string" ? rpcData : rpcData?.id;
+    if (!createdId) return { data: null, error: "Branch creation failed" };
+
     const { data, error } = await supabase
       .from("branches")
-      .insert(params)
-      .select()
+      .select("*")
+      .eq("id", createdId)
       .single();
 
     if (error) return { data: null, error: error.message };
@@ -149,7 +140,7 @@ export async function updateBranch(
 ): Promise<{ error?: string }> {
   try {
     // Validate input
-    const validated = validate(UpdateBranchSchema, updates);
+    const validated = validate(BranchUpdateSchema, updates);
     if (validated.error) return { error: validated.error };
 
     const supabase = await createServerSupabaseClient();

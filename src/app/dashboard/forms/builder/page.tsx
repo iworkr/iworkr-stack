@@ -20,7 +20,6 @@
 import { motion } from "framer-motion";
 import {
   FileText,
-  Shield,
   HardHat,
   Stethoscope,
   ClipboardCheck,
@@ -34,7 +33,9 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
-import { createBrowserClient } from "@supabase/ssr";
+import { useFormsStore } from "@/lib/forms-store";
+import { useToastStore } from "@/components/app/action-toast";
+import type { BlockType } from "@/lib/forms-data";
 
 /* ── Template Presets ─────────────────────────────────────────── */
 
@@ -211,6 +212,8 @@ export default function FormBuilderEntryPage() {
   const { orgId } = useOrg();
   const router = useRouter();
   const { isCare } = useIndustryLexicon();
+  const { createFormTemplateDraftServer } = useFormsStore();
+  const { addToast } = useToastStore();
   const [creating, setCreating] = useState<string | null>(null);
 
   const createForm = useCallback(
@@ -219,20 +222,9 @@ export default function FormBuilderEntryPage() {
       setCreating(preset.id);
 
       try {
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
-
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) throw new Error("Not authenticated");
-
-        // Transform preset blocks to builder format
-        const blocks = preset.blocks.map((b, i) => ({
+        const schemaJsonb = preset.blocks.map((b, i) => ({
           id: crypto.randomUUID(),
-          type: b.type,
+          type: b.type as BlockType,
           label: b.label,
           required: b.required ?? false,
           options: b.options ?? [],
@@ -240,30 +232,23 @@ export default function FormBuilderEntryPage() {
           order: i,
         }));
 
-        const { data: form, error } = await supabase
-          .from("forms")
-          .insert({
-            organization_id: orgId,
-            title: preset.id === "blank" ? "Untitled Form" : preset.title,
-            description: preset.id === "blank" ? "" : preset.description,
-            category: preset.category,
-            status: "draft",
-            blocks,
-            created_by: user.id,
-          })
-          .select("id")
-          .single();
+        const { data, error } = await createFormTemplateDraftServer({
+          workspace_id: orgId,
+          title: preset.id === "blank" ? "Untitled Form" : preset.title,
+          description: preset.id === "blank" ? "" : preset.description,
+          category: preset.category,
+          schema_jsonb: schemaJsonb,
+        });
 
-        if (error) throw error;
-        if (!form?.id) throw new Error("Failed to create form");
-
-        router.push(`/dashboard/forms/builder/${form.id}`);
+        if (error || !data?.id) throw new Error(error || "Failed to create form");
+        router.push(`/dashboard/forms/builder/${data.id}`);
       } catch (err) {
         console.error("[FormBuilder] Creation error:", err);
+        addToast("Failed to create form template.", undefined, "error");
         setCreating(null);
       }
     },
-    [orgId, creating, router]
+    [orgId, creating, createFormTemplateDraftServer, router, addToast]
   );
 
   // Filter presets based on sector

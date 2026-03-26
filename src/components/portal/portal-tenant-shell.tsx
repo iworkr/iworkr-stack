@@ -116,7 +116,7 @@ export function PortalTenantShell({ config, slug, children }: Props) {
       if (Date.now() - store.lastActivity > timeoutMs) {
         const supabase = createClient();
         await supabase.auth.signOut();
-        router.push(`/portal/login?slug=${slug}&expired=true`);
+        router.replace(`/portal/login?slug=${slug}&expired=true`);
       }
     }, 30_000);
 
@@ -130,7 +130,7 @@ export function PortalTenantShell({ config, slug, children }: Props) {
     const supabase = createClient();
     await supabase.auth.signOut();
     usePortalStore.getState().reset();
-    router.push(`/portal/login?slug=${slug}`);
+    router.replace(`/portal/login?slug=${slug}`);
   }, [router, slug]);
 
   const activeEntity = grantedEntities.find((e) => e.entity_id === activeEntityId);

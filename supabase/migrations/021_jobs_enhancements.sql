@@ -215,6 +215,16 @@ declare
   v_sort int := 0;
   v_total_cents int := 0;
 begin
+  if auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = p_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   -- Calculate total from line items
   for v_line_item in select * from jsonb_array_elements(p_line_items)
   loop
@@ -293,6 +303,16 @@ as $$
 declare
   v_result json;
 begin
+  if auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = p_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   select json_agg(row_to_json(t))
   into v_result
   from (
@@ -330,7 +350,24 @@ security definer
 as $$
 declare
   v_result json;
+  v_target_org_id uuid;
 begin
+  select j.organization_id
+  into v_target_org_id
+  from public.jobs j
+  where j.id = p_job_id
+    and j.deleted_at is null;
+
+  if v_target_org_id is null or auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = v_target_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   select row_to_json(t)
   into v_result
   from (

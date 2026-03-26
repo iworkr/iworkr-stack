@@ -1,9 +1,9 @@
 # Team & RBAC Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-14T15:03:21.066Z
+> **Generated**: 2026-03-25T15:41:47.678Z
 > **Module**: Team & RBAC (`/dashboard/team`, `/dashboard/team/roles`)
 > **Test Framework**: Playwright (16 test suites)
-> **Total Findings**: 20
+> **Total Findings**: 0
 
 ---
 
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 5 |
+| 🔴 Critical Failures | 0 |
 | 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 7 |
-| 🟢 Flow Passes | 8 |
+| 🟠 Warnings | 0 |
+| 🟢 Flow Passes | 0 |
 
 ---
 
@@ -26,34 +26,14 @@
 | Network Green (no 406) | PASS |
 | Real Data (no mock fallback) | PASS |
 | Persistence (role change) | PENDING |
-| Security (permission toggle) | PASS |
+| Security (permission toggle) | PENDING |
 | Invites (real server call) | PENDING |
 
 ---
 
 ## 🔴 Critical Failures
 
-### Heading missing
-- **Area**: Header
-- **Detail**: h1 not found.
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load schedule data: TypeError: Failed to fetch
-    at fetchServerAction (http://localhost:3000/_next/static/chunks/b0491_next_dist_client_60cec8a5._.js:8817:23)
-
-### HTTP 500
-- **Area**: Network
-- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
-
+_No critical failures found._
 ---
 
 ## 🟡 Visual Defects
@@ -68,46 +48,11 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
-### No members shown
-- **Area**: Members
-- **Detail**: Could be loading or empty.
-
-### No members to click
-- **Area**: Drawer
-- **Detail**: DB empty.
-
-### No members for role test
-- **Area**: Drawer
-- **Detail**: DB empty.
-
-### No members for suspend test
-- **Area**: Drawer
-- **Detail**: DB empty.
-
-### No members for remove test
-- **Area**: Drawer
-- **Detail**: DB empty.
-
-### No members for context test
-- **Area**: Context
-- **Detail**: DB empty.
-
-### HTTP 404
-- **Area**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
-
+_No warnings._
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[Header]** 'Roles' link renders: Navigates to /dashboard/team/roles.
-- ✅ **[Filters]** Filter button visible: Filter functionality present.
-- ✅ **[Roles]** Roles sidebar loads: Role list with counts.
-- ✅ **[Roles]** 1 roles listed: Roles from DB.
-- ✅ **[Permissions]** Permission toggles present: Uses saveRolePermissionsServer() with optimistic rollback.
-- ✅ **[MockData]** No mock data detected: Empty state — no mock fallback.
-- ✅ **[Style]** All buttons have pointer: Checked 15.
-- ✅ **[Network]** No 406 errors: useOrg fix confirmed.
 
 ---
 

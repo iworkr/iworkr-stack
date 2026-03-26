@@ -445,3 +445,83 @@ ON CONFLICT DO NOTHING;
 
 RAISE NOTICE 'Argus-Resilience: Full seed completed — Trades + Care + 50 clients + 10 participants + medications + incidents + policies!';
 END $$;
+
+-- ══════════════════════════════════════════════════════════
+-- GLOBAL FORM TEMPLATE LIBRARY (Alexandria-Store)
+-- ══════════════════════════════════════════════════════════
+
+insert into public.global_form_templates (
+  id,
+  title,
+  description,
+  sector,
+  category,
+  schema_jsonb,
+  is_premium
+)
+values
+  (
+    '31000000-0000-0000-0000-000000000001',
+    'Safe Work Method Statement (SWMS)',
+    'Trade-ready SWMS including hazard controls, PPE checklist, and sign-off.',
+    'TRADES',
+    'SAFETY',
+    '[
+      {"id":"swms_heading","type":"heading","label":"Safe Work Method Statement","required":false},
+      {"id":"job_reference","type":"short_text","label":"Job Reference","required":true,"placeholder":"e.g. JOB-401"},
+      {"id":"site_address","type":"short_text","label":"Site Address","required":true},
+      {"id":"work_scope","type":"long_text","label":"Scope of Works","required":true},
+      {"id":"hazards","type":"long_text","label":"Identified Hazards","required":true},
+      {"id":"controls","type":"long_text","label":"Control Measures","required":true},
+      {"id":"ppe","type":"checkbox","label":"PPE Confirmed","required":true,"options":["Hard hat","Safety glasses","Hi-vis","Steel cap boots","Gloves"]},
+      {"id":"site_photo","type":"photo_evidence","label":"Site Photo","required":false},
+      {"id":"worker_signature","type":"signature","label":"Worker Signature","required":true},
+      {"id":"supervisor_signature","type":"signature","label":"Supervisor Signature","required":true}
+    ]'::jsonb,
+    false
+  ),
+  (
+    '31000000-0000-0000-0000-000000000002',
+    'NDIS Incident Report',
+    'Care-sector incident form aligned to incident triage and compliance capture.',
+    'CARE',
+    'CLINICAL',
+    '[
+      {"id":"incident_heading","type":"heading","label":"NDIS Incident Report","required":false},
+      {"id":"incident_datetime","type":"date","label":"Incident Date","required":true},
+      {"id":"participant_name","type":"short_text","label":"Participant Name","required":true},
+      {"id":"incident_location","type":"short_text","label":"Location","required":true},
+      {"id":"incident_type","type":"dropdown","label":"Incident Type","required":true,"options":["Fall","Medication Error","Behavioral","Absconding","Other"]},
+      {"id":"incident_description","type":"long_text","label":"Detailed Description","required":true},
+      {"id":"immediate_action","type":"long_text","label":"Immediate Actions Taken","required":true},
+      {"id":"witnesses","type":"long_text","label":"Witnesses","required":false},
+      {"id":"evidence_photo","type":"photo_evidence","label":"Evidence Photo","required":false},
+      {"id":"reporter_signature","type":"signature","label":"Reporting Worker Signature","required":true}
+    ]'::jsonb,
+    false
+  ),
+  (
+    '31000000-0000-0000-0000-000000000003',
+    'Vehicle Pre-Start Inspection',
+    'Universal pre-start inspection for fleet and worker safety compliance.',
+    'ALL',
+    'INSPECTION',
+    '[
+      {"id":"vehicle_heading","type":"heading","label":"Vehicle Pre-Start Inspection","required":false},
+      {"id":"vehicle_rego","type":"short_text","label":"Vehicle Registration","required":true},
+      {"id":"inspection_date","type":"date","label":"Inspection Date","required":true},
+      {"id":"odometer","type":"number","label":"Odometer (km)","required":false},
+      {"id":"checks","type":"checkbox","label":"Checklist","required":true,"options":["Tyres checked","Lights working","Fluids checked","Brakes responsive","First aid kit stocked"]},
+      {"id":"defect_notes","type":"long_text","label":"Defects / Notes","required":false},
+      {"id":"defect_photo","type":"photo_evidence","label":"Defect Photo","required":false},
+      {"id":"driver_signature","type":"signature","label":"Driver Signature","required":true}
+    ]'::jsonb,
+    false
+  )
+on conflict (id) do update set
+  title = excluded.title,
+  description = excluded.description,
+  sector = excluded.sector,
+  category = excluded.category,
+  schema_jsonb = excluded.schema_jsonb,
+  is_premium = excluded.is_premium;

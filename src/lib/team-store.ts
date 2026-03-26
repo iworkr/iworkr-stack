@@ -22,7 +22,7 @@ import {
   getTeamOverview,
   getRoles,
   updateMemberRole as updateMemberRoleServer,
-  updateMemberDetails as updateMemberDetailsServer,
+  updateMemberDetails as updateMemberDetailsAction,
   suspendMember as suspendMemberAction,
   reactivateMember as reactivateMemberAction,
   removeMember as removeMemberServer,
@@ -165,6 +165,7 @@ interface TeamState {
   filterRole: string;
   filterSkill: string;
   selectedMemberId: string | null;
+  selectedMemberMode: "view" | "edit";
   inviteModalOpen: boolean;
   loaded: boolean;
   loading: boolean;
@@ -177,6 +178,7 @@ interface TeamState {
   setFilterRole: (r: string) => void;
   setFilterSkill: (s: string) => void;
   setSelectedMemberId: (id: string | null) => void;
+  openMemberProfile: (id: string, mode?: "view" | "edit") => void;
   setInviteModalOpen: (open: boolean) => void;
 
   loadFromServer: (orgId: string) => Promise<void>;
@@ -191,6 +193,11 @@ interface TeamState {
   addPendingMember: (name: string, email: string, role: RoleId, branch: string) => void;
 
   togglePermission: (roleId: RoleId, module: PermissionModule, action: PermissionAction) => void;
+  updateMemberSkillsServer: (memberId: string, skills: string[]) => Promise<{ error: string | null }>;
+  updateMemberDetailsServer: (
+    memberId: string,
+    updates: { branch?: string; branch_id?: string | null; phone?: string; hourly_rate?: number }
+  ) => Promise<{ error: string | null }>;
 
   inviteMemberServer: (params: {
     email: string;
@@ -229,6 +236,7 @@ export const useTeamStore = create<TeamState>()(
   filterRole: "all",
   filterSkill: "all",
   selectedMemberId: null,
+  selectedMemberMode: "view",
   inviteModalOpen: false,
   loaded: false,
   loading: false,
@@ -240,7 +248,8 @@ export const useTeamStore = create<TeamState>()(
   setFilterBranch: (b) => set({ filterBranch: b }),
   setFilterRole: (r) => set({ filterRole: r }),
   setFilterSkill: (s) => set({ filterSkill: s }),
-  setSelectedMemberId: (id) => set({ selectedMemberId: id }),
+  setSelectedMemberId: (id) => set({ selectedMemberId: id, selectedMemberMode: "view" }),
+  openMemberProfile: (id, mode = "view") => set({ selectedMemberId: id, selectedMemberMode: mode }),
   setInviteModalOpen: (open) => set({ inviteModalOpen: open }),
 
   /* ── Load from server ──────────────────────── */
@@ -432,6 +441,71 @@ export const useTeamStore = create<TeamState>()(
       }),
     })),
 
+  updateMemberSkillsServer: async (memberId, skills) => {
+    const orgId = get().orgId;
+    if (!orgId) return { error: "No organization" };
+    if (memberId.startsWith("invite-")) return { error: "Cannot update invite skills" };
+
+    const previousMembers = get().members;
+
+    set((s) => ({
+      members: s.members.map((m) => (m.id === memberId ? { ...m, skills } : m)),
+    }));
+
+    const res = await updateMemberDetailsAction(orgId, memberId, { skills });
+    if (res.error) {
+      set({ members: previousMembers });
+    }
+    return { error: res.error };
+  },
+
+  updateMemberDetailsServer: async (memberId, updates) => {
+    const orgId = get().orgId;
+    if (!orgId) return { error: "No organization" };
+    if (memberId.startsWith("invite-")) return { error: "Cannot update invite member details" };
+
+    const previousMembers = get().members;
+    const normalizedPhone = updates.phone?.trim();
+
+    set((s) => ({
+      members: s.members.map((m) =>
+        m.id === memberId
+          ? {
+              ...m,
+              ...(updates.branch !== undefined ? { branch: updates.branch } : {}),
+              ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
+              ...(updates.hourly_rate !== undefined ? { hourlyRate: updates.hourly_rate } : {}),
+            }
+          : m
+      ),
+    }));
+
+    const payload: {
+      branch?: string;
+      branch_id?: string | null;
+      hourly_rate?: number;
+      phone?: string;
+    } = {};
+    if (updates.branch !== undefined) payload.branch = updates.branch;
+    if (updates.branch_id !== undefined) payload.branch_id = updates.branch_id;
+    if (updates.hourly_rate !== undefined) payload.hourly_rate = updates.hourly_rate;
+    if (normalizedPhone !== undefined) payload.phone = normalizedPhone;
+
+    const res = await updateMemberDetailsAction(orgId, memberId, payload);
+    if (res.error) {
+      set({ members: previousMembers });
+      return { error: res.error };
+    }
+
+    if (normalizedPhone !== undefined) {
+      set((s) => ({
+        members: s.members.map((m) => (m.id === memberId ? { ...m, phone: normalizedPhone } : m)),
+      }));
+    }
+
+    return { error: null };
+  },
+
   /* ── Server-backed actions ─────────────────── */
 
   inviteMemberServer: async (params) => {
@@ -521,6 +595,7 @@ export const useTeamStore = create<TeamState>()(
       filterRole: "all",
       filterSkill: "all",
       selectedMemberId: null,
+      selectedMemberMode: "view",
       inviteModalOpen: false,
       loaded: false,
       loading: false,

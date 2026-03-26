@@ -196,6 +196,38 @@ export const useBrandingStore = create<BrandingState>()(
     }),
     {
       name: "iworkr-branding",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        try {
+          const state = (persisted ?? {}) as Record<string, unknown>;
+
+          if (version < 2) {
+            // v0/v1 → v2: Ensure the branding field is either a valid object or null.
+            // Protects against corrupted localStorage where branding is a string,
+            // number, or partially-constructed object.
+            const branding = state.branding;
+            const isValidBranding =
+              branding !== null &&
+              branding !== undefined &&
+              typeof branding === "object" &&
+              !Array.isArray(branding);
+
+            return {
+              branding: isValidBranding ? branding : null,
+            };
+          }
+
+          return persisted;
+        } catch {
+          console.warn("[branding-store] Migration failed, resetting to defaults");
+          return undefined;
+        }
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state?.branding?.workspace_id) {
+          console.debug("[branding-store] Rehydrated from cache for workspace:", state.branding.workspace_id);
+        }
+      },
       partialize: (state) => ({
         branding: state.branding,
       }),

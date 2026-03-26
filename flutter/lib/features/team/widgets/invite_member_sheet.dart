@@ -49,18 +49,21 @@ class _InviteMemberSheetState extends ConsumerState<InviteMemberSheet> {
 
     setState(() { _sending = true; _error = null; });
 
-    final success = await ref.read(teamProvider.notifier).inviteMember(
+    final result = await ref.read(teamProvider.notifier).inviteMember(
       email: email,
       fullName: name,
       role: _selectedRole,
     );
 
     if (mounted) {
-      if (success) {
+      if (result.success) {
         HapticFeedback.heavyImpact();
         Navigator.pop(context);
       } else {
-        setState(() { _sending = false; _error = 'Failed to send invite. Please try again.'; });
+        setState(() {
+          _sending = false;
+          _error = result.error ?? 'Failed to send invite. Please try again.';
+        });
       }
     }
   }

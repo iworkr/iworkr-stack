@@ -7,10 +7,27 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Search, User } from "lucide-react";
+import { X, Search, User, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useMessengerStore } from "@/lib/stores/messenger-store";
-import { useTeamStore } from "@/lib/team-store";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useToastStore } from "@/components/app/action-toast";
+
+interface MessageableUser {
+  id: string;
+  full_name: string;
+  email: string | null;
+  role: string | null;
+  avatar_url: string | null;
+}
+
+type RpcClient = {
+  rpc: (
+    fn: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message?: string } | null }>;
+};
 
 interface NewMessageModalProps {
   open: boolean;
@@ -25,17 +42,13 @@ export function NewMessageModal({
   orgId,
   currentUserId,
 }: NewMessageModalProps) {
-  const openDM = useMessengerStore((s) => s.openDM);
-  const allMembers = useTeamStore((s) => s.members);
-  const members = useMemo(
-    () =>
-      (allMembers ?? []).filter(
-        (m) => m.id !== currentUserId && (m.status === "active" || !m.status),
-      ),
-    [allMembers, currentUserId],
-  );
+  const router = useRouter();
+  const addChannelLocally = useMessengerStore((s) => s.addChannelLocally);
+  const addToast = useToastStore((s) => s.addToast);
+  const [messageableUsers, setMessageableUsers] = useState<MessageableUser[]>([]);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [isNavigating, setIsNavigating] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -45,20 +58,85 @@ export function NewMessageModal({
     }
   }, [open]);
 
-  const filtered = query.trim()
-    ? members.filter(
-        (m) =>
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          (m.email || "").toLowerCase().includes(query.toLowerCase())
-      )
-    : members;
+  useEffect(() => {
+    if (!open || !orgId?.trim()) return;
 
-  const handleSelect = async (targetUserId: string) => {
-    if (!orgId?.trim()) return;
-    setLoading(true);
-    await openDM(orgId, targetUserId);
-    setLoading(false);
-    onClose();
+    let mounted = true;
+    const supabase = createClient() as unknown as RpcClient;
+
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const { data, error } = await supabase.rpc("get_messageable_users", {
+          p_workspace_id: orgId,
+        });
+        if (error) throw error;
+        if (!mounted) return;
+        setMessageableUsers(
+          ((data ?? []) as MessageableUser[]).filter((u) => u.id !== currentUserId),
+        );
+      } catch {
+        if (!mounted) return;
+        setMessageableUsers([]);
+        addToast("Unable to load messageable users.", undefined, "error");
+      } finally {
+        if (mounted) setLoadingUsers(false);
+      }
+    };
+
+    void fetchUsers();
+    return () => {
+      mounted = false;
+    };
+  }, [open, orgId, currentUserId, addToast]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return messageableUsers;
+    const q = query.toLowerCase();
+    return messageableUsers.filter(
+      (m) =>
+        (m.full_name || "").toLowerCase().includes(q) ||
+        (m.email || "").toLowerCase().includes(q) ||
+        (m.role || "").toLowerCase().includes(q),
+    );
+  }, [messageableUsers, query]);
+
+  const handleSelectUser = async (targetUserId: string) => {
+    if (!orgId?.trim() || isNavigating) return;
+
+    const supabase = createClient() as unknown as RpcClient;
+    setIsNavigating(targetUserId);
+
+    try {
+      const { data: channelId, error } = await supabase.rpc("get_or_create_direct_message", {
+        p_target_user_id: targetUserId,
+        p_workspace_id: orgId,
+      });
+      if (error) throw error;
+      if (!channelId) throw new Error("No channel returned");
+
+      addChannelLocally({
+        id: String(channelId),
+        organization_id: orgId,
+        type: "dm",
+        name: null,
+        description: null,
+        context_id: null,
+        context_type: null,
+        created_by: null,
+        is_archived: false,
+        metadata: {},
+        last_message_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      router.push(`/dashboard/messages/${channelId}`);
+      onClose();
+    } catch {
+      addToast("Failed to start conversation. Please try again.", undefined, "error");
+    } finally {
+      setIsNavigating(null);
+    }
   };
 
   if (!open) return null;
@@ -110,36 +188,45 @@ export function NewMessageModal({
         </div>
 
         <div className="max-h-[320px] overflow-y-auto py-2">
-          {filtered.length === 0 ? (
+          {loadingUsers ? (
+            <div className="flex items-center justify-center px-5 py-8 text-zinc-500">
+              <Loader2 size={14} className="animate-spin" />
+              <span className="ml-2 text-[12px]">Loading team members…</span>
+            </div>
+          ) : filtered.length === 0 ? (
             <p className="px-5 py-8 text-center text-[12px] text-zinc-500">
-              {query.trim() ? "No matching members" : "No team members"}
+              {query.trim() ? "No matching members" : "No messageable members"}
             </p>
           ) : (
             filtered.map((member) => (
               <button
                 key={member.id}
                 type="button"
-                onClick={() => handleSelect(member.id)}
-                disabled={loading}
+                onClick={() => void handleSelectUser(member.id)}
+                disabled={!!isNavigating}
                 className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors hover:bg-white/5 disabled:opacity-50"
               >
                 <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/5 bg-zinc-800 text-[11px] font-semibold text-white">
-                  {member.initials}
-                  {member.onlineStatus === "online" && (
-                    <span className="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 bg-emerald-500" />
-                  )}
+                  {(member.full_name || "??")
+                    .split(" ")
+                    .map((w) => w[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] font-medium text-zinc-200">
-                    {member.name}
+                    {member.full_name}
                   </p>
-                  {member.email && (
-                    <p className="truncate text-[11px] text-zinc-500">
-                      {member.email}
-                    </p>
-                  )}
+                  <p className="truncate text-[11px] text-zinc-500">
+                    {member.email || member.role || "Team member"}
+                  </p>
                 </div>
-                <User size={14} className="shrink-0 text-zinc-600" />
+                {isNavigating === member.id ? (
+                  <Loader2 size={14} className="shrink-0 animate-spin text-emerald-400" />
+                ) : (
+                  <User size={14} className="shrink-0 text-zinc-600" />
+                )}
               </button>
             ))
           )}

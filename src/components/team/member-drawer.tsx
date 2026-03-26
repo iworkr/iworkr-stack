@@ -41,11 +41,14 @@ import {
   MessageSquare,
   Calendar,
   FileText,
+  Pencil,
+  Save,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTeamStore } from "@/lib/team-store";
 import { getRoleLabel, getRoleColor, roleDefinitions, skillDefinitions, type RoleId } from "@/lib/team-data";
 import { useToastStore } from "@/components/app/action-toast";
+import { useUserRole } from "@/lib/auth-store";
 
 /* ── Skill icon map ──────────────────────────────────────── */
 
@@ -100,8 +103,21 @@ const tabConfig: { id: DossierTab; label: string }[] = [
 ];
 
 export function MemberDrawer() {
-  const { members, selectedMemberId, setSelectedMemberId, updateMemberRoleServer, suspendMemberServer, reactivateMemberServer, removeMemberServer, resendInvite } = useTeamStore();
+  const {
+    members,
+    selectedMemberId,
+    selectedMemberMode,
+    setSelectedMemberId,
+    updateMemberRoleServer,
+    updateMemberDetailsServer,
+    suspendMemberServer,
+    reactivateMemberServer,
+    removeMemberServer,
+    resendInvite,
+    updateMemberSkillsServer,
+  } = useTeamStore();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [skillLoading, setSkillLoading] = useState<string | null>(null);
   const { addToast } = useToastStore();
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<DossierTab>("profile");
@@ -111,6 +127,14 @@ export function MemberDrawer() {
   const [showPasswordText, setShowPasswordText] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editBranch, setEditBranch] = useState("");
+  const [editHourlyRate, setEditHourlyRate] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const userRole = useUserRole();
+  const canManageTeam = ["owner", "admin", "office_admin", "manager"].includes(userRole);
 
   const member = selectedMemberId ? members.find((m) => m.id === selectedMemberId) : null;
   const isOpen = !!member;
@@ -134,7 +158,20 @@ export function MemberDrawer() {
     setPasswordValue("");
     setPasswordSuccess(false);
     setActiveTab("profile");
+    setIsEditing(false);
   };
+
+  useEffect(() => {
+    if (!member) return;
+    setEditPhone(member.phone || "");
+    setEditBranch(member.branch || "HQ");
+    setEditHourlyRate(member.hourlyRate ? String(member.hourlyRate) : "");
+    setIsEditing(selectedMemberMode === "edit");
+  }, [member?.id, selectedMemberMode]);
+
+  useEffect(() => {
+    if (!isEditing) setRoleDropdownOpen(false);
+  }, [isEditing]);
 
   const handleSetPassword = async () => {
     if (!member || passwordValue.length < 6) {
@@ -161,6 +198,71 @@ export function MemberDrawer() {
     } finally {
       setPasswordLoading(false);
     }
+  };
+
+  const handleAddSkill = async (skillId: string) => {
+    if (!member || member.skills.includes(skillId) || skillLoading) return;
+    setSkillLoading(`add:${skillId}`);
+    const nextSkills = [...member.skills, skillId];
+    const { error } = await updateMemberSkillsServer(member.id, nextSkills);
+    if (error) addToast(`Failed: ${error}`);
+    else {
+      const skillLabel = skillDefinitions.find((s) => s.id === skillId)?.label || "Skill";
+      addToast(`${skillLabel} added`);
+    }
+    setSkillLoading(null);
+  };
+
+  const handleRemoveSkill = async (skillId: string) => {
+    if (!member || skillLoading) return;
+    setSkillLoading(`remove:${skillId}`);
+    const nextSkills = member.skills.filter((id) => id !== skillId);
+    const { error } = await updateMemberSkillsServer(member.id, nextSkills);
+    if (error) addToast(`Failed: ${error}`);
+    else {
+      const skillLabel = skillDefinitions.find((s) => s.id === skillId)?.label || "Skill";
+      addToast(`${skillLabel} removed`);
+    }
+    setSkillLoading(null);
+  };
+
+  const handleCancelEdit = () => {
+    if (!member) return;
+    setEditPhone(member.phone || "");
+    setEditBranch(member.branch || "HQ");
+    setEditHourlyRate(member.hourlyRate ? String(member.hourlyRate) : "");
+    setIsEditing(false);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!member) return;
+    if (!canManageTeam) {
+      addToast("You don't have permission to edit member details");
+      return;
+    }
+
+    const parsedRate = Number(editHourlyRate);
+    const shouldUpdateRate = editHourlyRate.trim().length > 0;
+    if (shouldUpdateRate && (!Number.isFinite(parsedRate) || parsedRate < 0)) {
+      addToast("Hourly rate must be a valid positive number");
+      return;
+    }
+
+    setEditSaving(true);
+    const { error } = await updateMemberDetailsServer(member.id, {
+      phone: editPhone.trim(),
+      branch: editBranch.trim() || "HQ",
+      ...(canManageTeam && shouldUpdateRate ? { hourly_rate: parsedRate } : {}),
+    });
+    setEditSaving(false);
+
+    if (error) {
+      addToast(`Failed: ${error}`);
+      return;
+    }
+
+    addToast("Profile updated");
+    setIsEditing(false);
   };
 
   return (
@@ -192,13 +294,44 @@ export function MemberDrawer() {
                 }}
               />
 
-              {/* Close */}
-              <button
-                onClick={handleClose}
-                className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-black/40 text-zinc-500 backdrop-blur-sm transition-colors hover:text-white"
-              >
-                <X size={14} />
-              </button>
+              {/* Header controls */}
+              <div className="absolute right-3 top-3 z-10 flex items-center gap-1.5">
+                {canManageTeam && (
+                  isEditing ? (
+                    <>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={editSaving}
+                        className="rounded-lg border border-white/[0.08] bg-black/35 px-2 py-1 text-[10px] text-zinc-300 transition-colors hover:bg-black/55 disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={editSaving}
+                        className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-60"
+                      >
+                        {editSaving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+                        Save
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="flex h-7 items-center gap-1 rounded-lg bg-black/40 px-2 text-[10px] text-zinc-300 backdrop-blur-sm transition-colors hover:text-white"
+                    >
+                      <Pencil size={10} />
+                      Edit
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={handleClose}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/40 text-zinc-500 backdrop-blur-sm transition-colors hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              </div>
 
               <div className="flex items-end gap-4 px-5 pb-5 pt-5">
                 {/* Avatar */}
@@ -285,7 +418,7 @@ export function MemberDrawer() {
             </div>
 
             {/* ── Tab Content ──────────────────────────── */}
-            <div className="flex-1 overflow-y-auto scrollbar-none px-5 py-4">
+            <div className="scrollbar-team flex-1 overflow-y-auto px-5 py-4 pb-20">
               <AnimatePresence mode="wait">
                 {activeTab === "profile" && (
                   <motion.div
@@ -299,30 +432,81 @@ export function MemberDrawer() {
                     {/* Details */}
                     <div className="space-y-3">
                       <h3 className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Details</h3>
-                      <div className="space-y-2">
-                        {[
-                          { label: "Phone", value: member.phone },
-                          { label: "Branch", value: member.branch },
-                          { label: "Joined", value: member.joinedAt },
-                          { label: "Hourly Rate", value: `$${member.hourlyRate}/hr`, mono: true },
-                          { label: "Avg Rating", value: member.avgRating > 0 ? `${member.avgRating.toFixed(1)} ★` : "—" },
-                        ].map((row) => (
-                          <div key={row.label} className="flex items-center justify-between py-1">
-                            <span className="text-[11px] text-zinc-500">{row.label}</span>
-                            <span className={`text-[11px] ${row.mono ? "font-mono text-emerald-400" : "text-zinc-300"}`}>{row.value}</span>
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <label className="block space-y-1">
+                            <span className="text-[10px] text-zinc-500">Phone</span>
+                            <input
+                              value={editPhone}
+                              onChange={(e) => setEditPhone(e.target.value)}
+                              className="w-full rounded-lg border border-white/[0.08] bg-zinc-900/50 px-2.5 py-2 text-[11px] text-zinc-200 outline-none focus:border-white/[0.16]"
+                              placeholder="Enter phone number"
+                            />
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[10px] text-zinc-500">Branch</span>
+                            <select
+                              value={editBranch}
+                              onChange={(e) => setEditBranch(e.target.value)}
+                              className="w-full rounded-lg border border-white/[0.08] bg-zinc-900/50 px-2.5 py-2 text-[11px] text-zinc-200 outline-none focus:border-white/[0.16]"
+                            >
+                              {["HQ", "North Branch", "South Branch", "East Branch", "West Branch"].map((branch) => (
+                                <option key={branch} value={branch}>
+                                  {branch}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="block space-y-1">
+                            <span className="text-[10px] text-zinc-500">Hourly Rate</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={editHourlyRate}
+                              onChange={(e) => setEditHourlyRate(e.target.value)}
+                              disabled={!canManageTeam}
+                              className="w-full rounded-lg border border-white/[0.08] bg-zinc-900/50 px-2.5 py-2 font-mono text-[11px] text-zinc-200 outline-none focus:border-white/[0.16] disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                          </label>
+                          <div className="flex items-center justify-between py-1">
+                            <span className="text-[11px] text-zinc-500">Joined</span>
+                            <span className="text-[11px] text-zinc-300">{member.joinedAt}</span>
                           </div>
-                        ))}
-                      </div>
+                          <div className="flex items-center justify-between py-1">
+                            <span className="text-[11px] text-zinc-500">Avg Rating</span>
+                            <span className="text-[11px] text-zinc-300">
+                              {member.avgRating > 0 ? `${member.avgRating.toFixed(1)} ★` : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {[
+                            { label: "Phone", value: member.phone || "—" },
+                            { label: "Branch", value: member.branch },
+                            { label: "Joined", value: member.joinedAt },
+                            { label: "Hourly Rate", value: `$${member.hourlyRate}/hr`, mono: true },
+                            { label: "Avg Rating", value: member.avgRating > 0 ? `${member.avgRating.toFixed(1)} ★` : "—" },
+                          ].map((row) => (
+                            <div key={row.label} className="flex items-center justify-between py-1">
+                              <span className="text-[11px] text-zinc-500">{row.label}</span>
+                              <span className={`text-[11px] ${row.mono ? "font-mono text-emerald-400" : "text-zinc-300"}`}>{row.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Role Change */}
-                    {member.role !== "owner" && (
+                    {member.role !== "owner" && canManageTeam && (
                       <div className="space-y-2">
                         <h3 className="text-[9px] font-bold uppercase tracking-widest text-zinc-600">Role</h3>
                         <div className="relative">
                           <button
-                            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                            className={`flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-zinc-900/30 px-3 py-2 text-[11px] transition-colors hover:bg-zinc-900/50 ${roleBadge.text}`}
+                            onClick={() => isEditing && setRoleDropdownOpen(!roleDropdownOpen)}
+                            disabled={!isEditing}
+                            className={`flex w-full items-center justify-between rounded-xl border border-white/[0.06] bg-zinc-900/30 px-3 py-2 text-[11px] transition-colors ${isEditing ? "hover:bg-zinc-900/50" : "cursor-not-allowed opacity-60"} ${roleBadge.text}`}
                           >
                             <span className="flex items-center gap-2">
                               <Shield size={12} />
@@ -331,7 +515,7 @@ export function MemberDrawer() {
                             <ChevronDown size={11} className="text-zinc-600" />
                           </button>
                           <AnimatePresence>
-                            {roleDropdownOpen && (
+                            {roleDropdownOpen && isEditing && (
                               <motion.div
                                 initial={{ opacity: 0, y: -4 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -396,12 +580,24 @@ export function MemberDrawer() {
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: i * 0.05, type: "spring", stiffness: 300 }}
-                              className="flex items-center gap-2.5 rounded-xl border border-white/[0.04] bg-zinc-900/30 p-3 transition-colors hover:border-white/[0.08]"
+                              className="group relative flex items-center gap-2.5 rounded-xl border border-white/[0.04] bg-zinc-900/30 p-3 pr-8 transition-colors hover:border-white/[0.08]"
                             >
                               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04]">
                                 <Icon size={13} className="text-zinc-400" />
                               </div>
                               <span className="text-[11px] font-medium text-zinc-300">{skill.label}</span>
+                              <button
+                                onClick={() => void handleRemoveSkill(skillId)}
+                                disabled={!!skillLoading}
+                                className="absolute right-2 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-zinc-600 opacity-0 transition-all hover:bg-rose-500/[0.08] hover:text-rose-400 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-label={`Remove ${skill.label}`}
+                              >
+                                {skillLoading === `remove:${skillId}` ? (
+                                  <Loader2 size={10} className="animate-spin" />
+                                ) : (
+                                  <X size={10} />
+                                )}
+                              </button>
                             </motion.div>
                           );
                         })}
@@ -419,14 +615,23 @@ export function MemberDrawer() {
                             return (
                               <button
                                 key={skill.id}
+                                onClick={() => void handleAddSkill(skill.id)}
+                                disabled={!!skillLoading}
                                 className="flex items-center gap-1 rounded-lg border border-dashed border-white/[0.06] px-2 py-1 text-[10px] text-zinc-600 transition-all hover:border-emerald-500/20 hover:bg-emerald-500/[0.04] hover:text-emerald-400"
                               >
-                                <Plus size={8} />
+                                {skillLoading === `add:${skill.id}` ? (
+                                  <Loader2 size={8} className="animate-spin" />
+                                ) : (
+                                  <Plus size={8} />
+                                )}
                                 <Icon size={9} />
                                 {skill.label}
                               </button>
                             );
                           })}
+                        {skillDefinitions.filter((s) => !member.skills.includes(s.id)).length === 0 && (
+                          <p className="text-[10px] text-zinc-600">All listed skills are assigned.</p>
+                        )}
                       </div>
                     </div>
                   </motion.div>

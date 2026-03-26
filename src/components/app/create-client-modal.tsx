@@ -1,13 +1,18 @@
 /**
  * @component CreateClientModal
  * @status COMPLETE
- * @description Client creation modal with address autocomplete, contact details, and AI duplicate detection
- * @lastAudit 2026-03-22
+ * @description Client creation modal with address autocomplete, interactive map with
+ *   flyTo + draggable marker, billing/service address split, contact details,
+ *   and AI duplicate detection.
+ * @lastAudit 2026-03-26
+ * @fix CLIENT-ADDRESS-03 — Eliminated self-destructing conditional render that
+ *   unmounted AddressAutocomplete on first keystroke. Decoupled addressQuery (live input)
+ *   from address (confirmed selection). The autocomplete is now always mounted.
  */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   X,
   MapPin,
@@ -21,12 +26,13 @@ import {
   Check,
   Briefcase,
   Receipt,
+  GripVertical,
 } from "lucide-react";
 import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useClientsStore } from "@/lib/clients-store";
 import { InlineMap } from "@/components/maps/inline-map";
-import { StaticMap } from "@/components/maps/static-map";
+import { DEFAULT_MAP_CENTER_LATLNG } from "@/components/maps/obsidian-map-styles";
 import { AddressAutocomplete, type AddressResult } from "@/components/ui/address-autocomplete";
 import { useOrg } from "@/lib/hooks/use-org";
 import { type Client, type ClientStatus } from "@/lib/data";
@@ -89,6 +95,12 @@ export function CreateClientModal({
 
   const [clientName, setClientName] = useState("");
   const [clientType, setClientType] = useState<"residential" | "commercial">("residential");
+
+  // FIX: CLIENT-ADDRESS-03 — Decoupled state model
+  // addressQuery = live autocomplete input text (set on every keystroke)
+  // address      = confirmed address string (set only on selection or ABN fill)
+  // addressCoords = lat/lng from geocoding (set on selection or marker drag)
+  const [addressQuery, setAddressQuery] = useState("");
   const [address, setAddress] = useState("");
   const [addressCoords, setAddressCoords] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -98,6 +110,9 @@ export function CreateClientModal({
   const [contactRole, setContactRole] = useState("");
 
   const [billingTerm, setBillingTerm] = useState<BillingTerm>("net_14");
+  const [billingAddressDifferent, setBillingAddressDifferent] = useState(false);
+  const [billingAddress, setBillingAddress] = useState("");
+  const [billingAddressQuery, setBillingAddressQuery] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [sendWelcome, setSendWelcome] = useState(false);
 
@@ -109,7 +124,6 @@ export function CreateClientModal({
 
   const nameInputRef = useRef<HTMLInputElement>(null);
   const contactNameRef = useRef<HTMLInputElement>(null);
-
 
   const { addToast } = useToastStore();
   const { createClientServer } = useClientsStore();
@@ -150,6 +164,7 @@ export function CreateClientModal({
       setIsLocked(false);
       setClientName("");
       setClientType("residential");
+      setAddressQuery("");
       setAddress("");
       setAddressCoords(null);
       setContactName("");
@@ -157,6 +172,9 @@ export function CreateClientModal({
       setContactPhone("");
       setContactRole("");
       setBillingTerm("net_14");
+      setBillingAddressDifferent(false);
+      setBillingAddress("");
+      setBillingAddressQuery("");
       setTags([]);
       setSendWelcome(false);
       setActivePill(null);
@@ -201,7 +219,10 @@ export function CreateClientModal({
     if (!nameQuery.trim()) return;
     setClientName(nameQuery.trim());
     setIsLocked(true);
-    if (abnResult?.address) setAddress(abnResult.address);
+    if (abnResult?.address) {
+      setAddress(abnResult.address);
+      setAddressQuery(abnResult.address);
+    }
     setTimeout(() => contactNameRef.current?.focus(), 80);
   }
 
@@ -210,9 +231,35 @@ export function CreateClientModal({
     setClientName("");
     setNameQuery(clientName);
     setAddress("");
+    setAddressQuery("");
     setAddressCoords(null);
     setTimeout(() => nameInputRef.current?.focus(), 50);
   }
+
+  /* ── Address handlers ───────────────────────────────────── */
+  const handleAddressSelect = useCallback((result: AddressResult) => {
+    setAddress(result.address);
+    setAddressQuery(result.address);
+    if (result.lat != null && result.lng != null) {
+      setAddressCoords({ lat: result.lat, lng: result.lng });
+    }
+  }, []);
+
+  const handleAddressClear = useCallback(() => {
+    setAddress("");
+    setAddressQuery("");
+    setAddressCoords(null);
+    setDriveTime(null);
+  }, []);
+
+  const handleMarkerDragEnd = useCallback((coords: { lat: number; lng: number }) => {
+    setAddressCoords(coords);
+  }, []);
+
+  const handleBillingAddressSelect = useCallback((result: AddressResult) => {
+    setBillingAddress(result.address);
+    setBillingAddressQuery(result.address);
+  }, []);
 
   /* ── Save ───────────────────────────────────────────────── */
   async function handleSave(mode: "save" | "save_and_job" | "save_and_quote" = "save") {
@@ -221,6 +268,12 @@ export function CreateClientModal({
     const billingTermMap: Record<string, string> = {
       due_receipt: "due_on_receipt", net_7: "net_7", net_14: "net_14", net_30: "net_30", net_60: "net_60",
     };
+
+    // Build metadata with billing address if different
+    const metadata: Record<string, unknown> = {};
+    if (billingAddressDifferent && billingAddress) {
+      metadata.billing_address = billingAddress;
+    }
 
     // If org is available, persist to server
     if (orgId) {
@@ -233,10 +286,11 @@ export function CreateClientModal({
         status: "active",
         type: clientType,
         address: address || null,
-        address_lat: addressCoords?.lat || null,
-        address_lng: addressCoords?.lng || null,
+        address_lat: addressCoords?.lat ?? null,
+        address_lng: addressCoords?.lng ?? null,
         tags,
         billing_terms: billingTermMap[billingTerm] || "due_on_receipt",
+        ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
         initial_contact: contactName
           ? {
               name: contactName,
@@ -408,7 +462,7 @@ export function CreateClientModal({
               </div>
 
               {/* ══════════════════════════════════════════════ */}
-              {/* ZONE 2: Location Intel (Map)                  */}
+              {/* ZONE 2: Location Intel (Map + Address)        */}
               {/* ══════════════════════════════════════════════ */}
               <AnimatePresence>
                 {isLocked && (
@@ -420,65 +474,77 @@ export function CreateClientModal({
                     className="overflow-hidden"
                   >
                     <div className="px-6 pb-4">
-                      {/* Map card */}
+                      {/* Map card — always interactive */}
                       <div className="overflow-hidden rounded-lg border border-[var(--border-base)]">
                         <div className="relative h-[160px] bg-[var(--surface-1)]">
-                          {addressCoords ? (
-                            <InlineMap lat={addressCoords.lat} lng={addressCoords.lng} zoom={15} className="h-full w-full" />
-                          ) : address ? (
-                            <StaticMap
-                              address={address}
-                              width={640}
-                              height={320}
-                              zoom={15}
-                              alt={address}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center">
-                              <MapPin size={16} strokeWidth={1} className="text-zinc-700" />
-                            </div>
-                          )}
+                          <InlineMap
+                            lat={addressCoords?.lat ?? DEFAULT_MAP_CENTER_LATLNG.lat}
+                            lng={addressCoords?.lng ?? DEFAULT_MAP_CENTER_LATLNG.lng}
+                            zoom={addressCoords ? 16 : 4}
+                            className="h-full w-full"
+                            interactive
+                            draggable={!!addressCoords}
+                            onMarkerDragEnd={handleMarkerDragEnd}
+                            hideMarker={!addressCoords}
+                          />
 
-                          {address && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.5 }}
-                              className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-md border border-[var(--card-border)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
-                            >
-                              <MapPin size={10} className="shrink-0 text-emerald-500" />
-                              <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
-                                {address}
-                              </span>
-                              {driveTime && (
-                                <span className="shrink-0 text-[9px] text-zinc-600">
-                                  {driveTime} from HQ
+                          {/* Address overlay on map */}
+                          <AnimatePresence>
+                            {address && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 4 }}
+                                transition={{ delay: 0.3 }}
+                                className="absolute bottom-2 left-2 right-2 z-10 flex items-center gap-2 rounded-md border border-[var(--card-border)] bg-[rgba(0,0,0,0.7)] px-3 py-2 backdrop-blur-md"
+                              >
+                                <MapPin size={10} className="shrink-0 text-emerald-500" />
+                                <span className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
+                                  {address}
                                 </span>
-                              )}
-                            </motion.div>
-                          )}
+                                {driveTime && (
+                                  <span className="shrink-0 text-[9px] text-zinc-600">
+                                    {driveTime} from HQ
+                                  </span>
+                                )}
+                                {addressCoords && (
+                                  <span className="shrink-0 flex items-center gap-0.5 text-[9px] text-zinc-700" title="Drag marker to adjust">
+                                    <GripVertical size={8} />
+                                    Drag pin
+                                  </span>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
 
-                      {/* Address input (if not auto-filled) */}
-                      {!address && (
-                        <div className="mt-3">
+                      {/* FIX: CLIENT-ADDRESS-03 — Always-mounted address autocomplete.
+                          addressQuery drives the input text (every keystroke).
+                          address is set only on selection (confirmed value).
+                          This prevents the self-destructing conditional render. */}
+                      <div className="mt-3">
+                        <div className="relative">
                           <AddressAutocomplete
-                            value={address}
-                            onChange={setAddress}
-                            onSelect={(result: AddressResult) => {
-                              setAddress(result.address);
-                              if (result.lat != null && result.lng != null) {
-                                setAddressCoords({ lat: result.lat, lng: result.lng });
-                              }
-                            }}
-                            placeholder="Search address…"
+                            value={addressQuery}
+                            onChange={setAddressQuery}
+                            onSelect={handleAddressSelect}
+                            placeholder="Search service address…"
                             variant="underline"
                             showIcon
                           />
+                          {/* Clear button when address is confirmed */}
+                          {address && (
+                            <button
+                              onClick={handleAddressClear}
+                              className="absolute right-0 top-0 rounded-md p-1 text-zinc-600 transition-colors hover:text-zinc-400"
+                              aria-label="Clear address"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* ══════════════════════════════════════════ */}
@@ -614,6 +680,56 @@ export function CreateClientModal({
                             />
                           </div>
                         </div>
+                      </div>
+
+                      {/* Billing address split — PRD §4.1 */}
+                      <div className="mt-4">
+                        <label className="flex items-center gap-2 text-[11px] text-zinc-500">
+                          <button
+                            onClick={() => {
+                              setBillingAddressDifferent(!billingAddressDifferent);
+                              if (billingAddressDifferent) {
+                                setBillingAddress("");
+                                setBillingAddressQuery("");
+                              }
+                            }}
+                            className={`relative h-[16px] w-[28px] rounded-full transition-colors ${billingAddressDifferent ? "bg-[var(--brand)]" : "bg-zinc-700"}`}
+                          >
+                            <motion.div
+                              layout
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              className="absolute top-[2px] h-3 w-3 rounded-full bg-white"
+                              style={{ left: billingAddressDifferent ? 13 : 2 }}
+                            />
+                          </button>
+                          Billing address is different from service address
+                        </label>
+
+                        <AnimatePresence>
+                          {billingAddressDifferent && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                              className="overflow-hidden"
+                            >
+                              <div className="mt-3">
+                                <label className="mb-1 block text-[9px] font-medium tracking-wider text-zinc-600 uppercase">
+                                  Billing Address
+                                </label>
+                                <AddressAutocomplete
+                                  value={billingAddressQuery}
+                                  onChange={setBillingAddressQuery}
+                                  onSelect={handleBillingAddressSelect}
+                                  placeholder="Search billing address…"
+                                  variant="underline"
+                                  showIcon
+                                />
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
                       {/* Tags */}

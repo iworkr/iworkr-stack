@@ -7,12 +7,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Hash,
   Users,
   Pin,
-  SmilePlus,
   Reply,
   MoreHorizontal,
   Check,
@@ -20,13 +19,15 @@ import {
   AlertCircle,
   Briefcase,
   ExternalLink,
+  FileText,
+  MapPin,
+  Download,
 } from "lucide-react";
 import { useMessengerStore, type Message, type Channel } from "@/lib/stores/messenger-store";
 import { MessageInput } from "./message-input";
 import { PollMessage } from "./poll-message";
-import { LottieIcon } from "@/components/dashboard/lottie-icon";
-import { typingDotsAnimation } from "@/components/dashboard/lottie-data-relay";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
+import { createClient } from "@/lib/supabase/client";
 
 /* ── Time formatting ──────────────────────────────────── */
 
@@ -81,18 +82,6 @@ function DeliveryStatus({ status, readAt }: { status?: "sending" | "sent" | "err
     return <CheckCheck size={12} className="text-emerald-500" />;
   }
   return <Check size={11} className="text-zinc-700" />;
-}
-
-/* ── Typing indicator ─────────────────────────────────── */
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-3 px-2 py-1">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900/60 text-[10px] text-zinc-600">
-        ...
-      </div>
-      <LottieIcon animationData={typingDotsAnimation} size={28} loop autoplay />
-    </div>
-  );
 }
 
 /* ── Empty chat state ─────────────────────────────────── */
@@ -296,7 +285,7 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                             msg.status === "sending" ? "opacity-70" : msg.status === "error" ? "opacity-100" : ""
                           } ${msg.status === "error" ? "border border-rose-500" : ""}`}
                         >
-                          <MessageContent content={msg.content} isSelf />
+                          <RichPayloadContent message={msg} isSelf />
                           {msg.status === "error" && (
                             <button
                               type="button"
@@ -313,14 +302,17 @@ export function ChatStream({ channel, userId, userProfile }: ChatStreamProps) {
                             msg.status === "sending" ? "opacity-70" : ""
                           }`}
                         >
-                          <MessageContent content={msg.content} />
+                          <RichPayloadContent message={msg} />
                         </div>
                       )}
 
                       {/* Delivery status */}
                       {isSelf && (
                         <div className="mt-0.5 flex items-center gap-1">
-                          <DeliveryStatus status={msg.status} readAt={(msg as any).read_at} />
+                          <DeliveryStatus
+                            status={msg.status}
+                            readAt={(msg as Message & { read_at?: string | null }).read_at}
+                          />
                         </div>
                       )}
 
@@ -414,5 +406,127 @@ function MessageContent({ content, isSelf }: { content: string; isSelf?: boolean
         ),
       )}
     </>
+  );
+}
+
+function RichPayloadContent({
+  message,
+  isSelf,
+}: {
+  message: Message;
+  isSelf?: boolean;
+}) {
+  const metadata = (message.metadata || {}) as Record<string, unknown>;
+  const mediaPath =
+    typeof metadata.media_path === "string" ? metadata.media_path : null;
+  const filename =
+    typeof metadata.filename === "string" ? metadata.filename : "attachment";
+  const lat = typeof metadata.lat === "number" ? metadata.lat : null;
+  const lng = typeof metadata.lng === "number" ? metadata.lng : null;
+
+  if (message.type === "image" && mediaPath) {
+    return (
+      <div className="space-y-2">
+        <SignedAttachmentPreview mediaPath={mediaPath} mode="image" filename={filename} />
+        {message.content ? <MessageContent content={message.content} isSelf={isSelf} /> : null}
+      </div>
+    );
+  }
+
+  if (message.type === "file" && mediaPath) {
+    return (
+      <div className="space-y-2">
+        <SignedAttachmentPreview mediaPath={mediaPath} mode="file" filename={filename} />
+        {message.content ? <MessageContent content={message.content} isSelf={isSelf} /> : null}
+      </div>
+    );
+  }
+
+  if (message.type === "location" && lat !== null && lng !== null) {
+    const mapHref = `https://maps.google.com/?q=${lat},${lng}`;
+    return (
+      <div className="space-y-1.5">
+        <a
+          href={mapHref}
+          target="_blank"
+          rel="noreferrer"
+          className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-[12px] transition-colors ${
+            isSelf
+              ? "border-white/25 bg-white/10 hover:bg-white/15"
+              : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06]"
+          }`}
+        >
+          <MapPin size={13} className={isSelf ? "text-white" : "text-emerald-400"} />
+          <span className="font-medium">Shared location</span>
+          <span className={`ml-auto font-mono text-[10px] ${isSelf ? "text-white/70" : "text-zinc-500"}`}>
+            {lat.toFixed(4)}, {lng.toFixed(4)}
+          </span>
+        </a>
+        {message.content ? <MessageContent content={message.content} isSelf={isSelf} /> : null}
+      </div>
+    );
+  }
+
+  return <MessageContent content={message.content} isSelf={isSelf} />;
+}
+
+function SignedAttachmentPreview({
+  mediaPath,
+  mode,
+  filename,
+}: {
+  mediaPath: string;
+  mode: "image" | "file";
+  filename: string;
+}) {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let isActive = true;
+
+    void supabase.storage
+      .from("chat_attachments")
+      .createSignedUrl(mediaPath, 3600)
+      .then(({ data, error }) => {
+        if (!isActive || error || !data?.signedUrl) return;
+        setSignedUrl(data.signedUrl);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [mediaPath]);
+
+  if (!signedUrl) {
+    return (
+      <div className="h-28 w-52 animate-pulse rounded-lg border border-white/[0.08] bg-white/[0.03]" />
+    );
+  }
+
+  if (mode === "image") {
+    return (
+      <a href={signedUrl} target="_blank" rel="noreferrer" className="block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={signedUrl}
+          alt={filename}
+          className="max-h-64 w-full rounded-lg border border-white/[0.08] object-cover transition-opacity hover:opacity-90"
+        />
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={signedUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2.5 py-2 text-[12px] hover:bg-white/[0.06]"
+    >
+      <FileText size={14} className="text-zinc-300" />
+      <span className="max-w-[220px] truncate font-medium">{filename}</span>
+      <Download size={12} className="ml-auto text-zinc-500" />
+    </a>
   );
 }

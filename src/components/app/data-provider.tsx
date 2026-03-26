@@ -26,6 +26,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useFleetTracking } from "@/lib/hooks/use-fleet-tracking";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useAuthStore } from "@/lib/auth-store";
+import { useToastStore } from "@/components/shell/notification-toast";
 
 /**
  * DataProvider — Optimised data loading layer (v3 — anti-slingshot)
@@ -47,6 +48,7 @@ let _loadGeneration = 0;
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { orgId, userId } = useOrg();
   const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
+  const addToast = useToastStore((s) => s.addToast);
   const prevOrgRef = useRef<string | null>(null);
 
   useFleetTracking({ orgId, enabled: !!orgId });
@@ -148,7 +150,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "notifications",
         filter: `user_id=eq.${userId}`,
-      }, (payload) => { addRealtimeItem(payload); })
+      }, (payload) => {
+        addRealtimeItem(payload);
+        const n = payload.new as Record<string, unknown>;
+        addToast({
+          id: (n.id as string) || crypto.randomUUID(),
+          type: (n.type as string) || "system",
+          title: (n.title as string) || "New notification",
+          body: (n.body as string) || "",
+          action_url: (n.action_url as string) || undefined,
+          created_at: (n.created_at as string) || new Date().toISOString(),
+        });
+      })
       .on("postgres_changes", {
         event: "UPDATE", schema: "public", table: "notifications",
         filter: `user_id=eq.${userId}`,
@@ -156,7 +169,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId, addRealtimeItem]);
+  }, [userId, addRealtimeItem, addToast]);
 
   // Channel 2: Org-scoped data changes
   useEffect(() => {

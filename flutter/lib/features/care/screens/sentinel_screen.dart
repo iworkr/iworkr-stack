@@ -31,6 +31,42 @@ class SentinelScreen extends ConsumerStatefulWidget {
 class _SentinelScreenState extends ConsumerState<SentinelScreen> {
   SentinelSeverity? _filterSeverity;
 
+  void _openSentinelActions() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.iColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final c = context.iColors;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(PhosphorIconsLight.clockCounterClockwise, color: c.textSecondary),
+                title: const Text('Refresh alerts'),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  ref.invalidate(sentinelAlertsStreamProvider);
+                  ref.invalidate(sentinelStatsProvider);
+                },
+              ),
+              ListTile(
+                leading: Icon(PhosphorIconsLight.bellRinging, color: c.textSecondary),
+                title: const Text('Notification preferences'),
+                subtitle: const Text('Coming soon'),
+                onTap: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = context.iColors;
@@ -94,10 +130,7 @@ class _SentinelScreenState extends ConsumerState<SentinelScreen> {
             ),
             actions: [
               GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  // INCOMPLETE:TODO(Sentinel settings and scan history route not wired yet; action button is currently non-functional).
-                },
+                onTap: _openSentinelActions,
                 child: Padding(
                   padding: const EdgeInsets.only(right: 16),
                   child: Icon(PhosphorIconsLight.gear, color: c.textSecondary, size: 22),

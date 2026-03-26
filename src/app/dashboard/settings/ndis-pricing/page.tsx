@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useSectorFeatures } from "@/lib/hooks/use-sector-features";
 import {
   fetchNDISCatalogue,
   fetchNDISSyncStatus,
@@ -337,6 +338,31 @@ function UploadModal({
 
 export default function NDISPricingPage() {
   const { orgId } = useOrg();
+  const { showNDIS } = useSectorFeatures();
+
+  // Sector gate — Trades workspaces should not see NDIS pricing
+  if (!showNDIS) {
+    return (
+      <div className="flex h-full min-h-[60vh] items-center justify-center">
+        <div className="max-w-sm text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+            <Database size={20} className="text-zinc-600" />
+          </div>
+          <p className="font-mono text-[10px] tracking-widest text-zinc-700 uppercase">
+            Sector Restricted
+          </p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-100">
+            Not available for your industry
+          </h2>
+          <p className="mt-2 text-[13px] text-zinc-500">
+            The NDIS pricing catalogue is only available for care-sector
+            workspaces. Switch your workspace industry in organisation
+            settings to access this feature.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // Data state
   const [items, setItems] = useState<NDISCatalogueItem[]>([]);

@@ -1,11 +1,8 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:iworkr_mobile/core/database/app_database.dart';
-import 'package:iworkr_mobile/core/database/sync_engine.dart';
-import 'package:iworkr_mobile/core/services/supabase_service.dart';
 
 /// A single compliance requirement that was not met.
 class ComplianceViolation {
@@ -106,8 +103,8 @@ class CerberusValidator {
     return ComplianceResult.blocked(violations);
   }
 
-  List<LocalComplianceRuleData> _filterApplicableRules(
-    List<LocalComplianceRuleData> rules, {
+  List<LocalComplianceRule> _filterApplicableRules(
+    List<LocalComplianceRule> rules, {
     required String jobId,
     required List<String> jobLabels,
     String? clientId,
@@ -139,7 +136,7 @@ class CerberusValidator {
   }
 
   Future<ComplianceViolation?> _evaluateRule({
-    required LocalComplianceRuleData rule,
+    required LocalComplianceRule rule,
     required Map<String, dynamic> config,
     required String jobId,
     String? shiftId,
@@ -168,7 +165,7 @@ class CerberusValidator {
   // ── FORM_SUBMISSION Evaluator ────────────────────────────
 
   Future<ComplianceViolation?> _evaluateFormSubmission(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String jobId,
   ) async {
@@ -194,7 +191,7 @@ class CerberusValidator {
   // ── MEDIA_CAPTURE Evaluator ──────────────────────────────
 
   Future<ComplianceViolation?> _evaluateMediaCapture(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String jobId,
   ) async {
@@ -221,7 +218,7 @@ class CerberusValidator {
   // ── PROGRESS_NOTE Evaluator ──────────────────────────────
 
   Future<ComplianceViolation?> _evaluateProgressNote(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String? shiftId,
   ) async {
@@ -248,7 +245,7 @@ class CerberusValidator {
   // ── EMAR_SIGN_OFF Evaluator ──────────────────────────────
 
   Future<ComplianceViolation?> _evaluateEmarSignOff(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String? shiftId,
   ) async {
@@ -273,7 +270,7 @@ class CerberusValidator {
   // ── CLIENT_SIGNATURE Evaluator ───────────────────────────
 
   Future<ComplianceViolation?> _evaluateClientSignature(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String jobId,
   ) async {
@@ -295,7 +292,7 @@ class CerberusValidator {
   // ── SWMS_REQUIRED Evaluator ──────────────────────────────
 
   Future<ComplianceViolation?> _evaluateSwmsRequired(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String jobId,
   ) async {
@@ -317,7 +314,7 @@ class CerberusValidator {
   // ── SUBTASK_COMPLETION Evaluator ─────────────────────────
 
   Future<ComplianceViolation?> _evaluateSubtaskCompletion(
-    LocalComplianceRuleData rule,
+    LocalComplianceRule rule,
     Map<String, dynamic> config,
     String jobId,
   ) async {

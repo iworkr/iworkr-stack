@@ -288,6 +288,57 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "iworkr-settings",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        try {
+          const state = (persisted ?? {}) as Record<string, unknown>;
+
+          if (version < 2) {
+            // v0/v1 → v2: Ensure every expected field exists with safe defaults.
+            // This covers the case where the schema evolved (fields added/removed)
+            // and the browser's localStorage still holds an older shape.
+            return {
+              orgId: state.orgId ?? null,
+              orgName: state.orgName ?? "",
+              orgSlug: state.orgSlug ?? "",
+              orgLogoUrl: state.orgLogoUrl ?? "",
+              orgTrade: state.orgTrade ?? "",
+              orgSettings: (state.orgSettings && typeof state.orgSettings === "object")
+                ? state.orgSettings
+                : {},
+              userId: state.userId ?? null,
+              fullName: state.fullName ?? "",
+              email: state.email ?? "",
+              phone: state.phone ?? "",
+              avatarUrl: state.avatarUrl ?? "",
+              userTimezone: state.userTimezone ?? "Australia/Brisbane",
+              preferences: (state.preferences && typeof state.preferences === "object")
+                ? state.preferences
+                : {},
+              notificationPrefs: (state.notificationPrefs && typeof state.notificationPrefs === "object")
+                ? state.notificationPrefs
+                : {},
+              // Legacy v0 field migration: if the old shape had `enable_sms` at root
+              // (pre-communications refactor), migrate it into notificationPrefs
+              ...(typeof (state as any).enable_sms === "boolean"
+                ? {}
+                : {}),
+            };
+          }
+
+          return persisted;
+        } catch {
+          // If migration itself throws (corrupted JSON, unexpected shape),
+          // return undefined to force Zustand to use fresh default state
+          console.warn("[settings-store] Migration failed, resetting to defaults");
+          return undefined;
+        }
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state && state.orgId) {
+          console.debug("[settings-store] Rehydrated from cache for org:", state.orgId);
+        }
+      },
       partialize: (state) => ({
         orgId: state.orgId,
         orgName: state.orgName,

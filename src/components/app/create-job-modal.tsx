@@ -34,6 +34,8 @@ import { useJobsStore } from "@/lib/jobs-store";
 import { useClientsStore } from "@/lib/clients-store";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useAuthStore } from "@/lib/auth-store";
+import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import { useSectorFeatures } from "@/lib/hooks/use-sector-features";
 import { type Client, type Priority, type JobStatus, type Job } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 
@@ -88,6 +90,13 @@ function getAvatarColor(initials: string) {
   return AVATAR_COLORS[c % AVATAR_COLORS.length];
 }
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string | null | undefined): value is string {
+  return typeof value === "string" && UUID_REGEX.test(value);
+}
+
 /* ── Component ────────────────────────────────────────────── */
 
 export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
@@ -121,14 +130,17 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const { createJobServer } = useJobsStore();
   const storeClients = useClientsStore((s) => s.clients);
   const { orgId } = useOrg();
+  const hasValidOrgContext = isUuid(orgId);
   const orgName = useAuthStore((s) => s.currentOrg?.name);
+  const { t } = useIndustryLexicon();
+  const { isCare } = useSectorFeatures();
   const [saving, setSaving] = useState(false);
   const searchParams = useSearchParams();
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; initials: string }[]>([]);
 
   /* ── Fetch team members from DB ──────────────────────── */
   useEffect(() => {
-    if (!orgId) return;
+    if (!hasValidOrgContext) return;
     const supabase = createClient();
     (supabase as any)
       .from("organization_members")
@@ -148,7 +160,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           });
         setTeamMembers(members);
       });
-  }, [orgId]);
+  }, [orgId, hasValidOrgContext]);
 
   /* ── Derived ────────────────────────────────────────────── */
   const allClients = storeClients;
@@ -175,6 +187,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   );
 
   const quoteTotal = lineItems.reduce((sum, li) => sum + li.cost, 0);
+  const estimateEnabled = !isCare && estimateMode;
 
   const assigneeTeam = teamMembers.map((t) => ({
     value: t.name,
@@ -285,15 +298,19 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   /* ── Save ───────────────────────────────────────────────── */
   async function handleSave() {
     if (!title.trim() || saving) return;
+    if (!hasValidOrgContext) {
+      addToast("Workspace context not loaded. Please refresh and try again.");
+      return;
+    }
 
     // Find the team member to get their profile id for assignment
     const assigneeMember = assignee !== "Unassigned" ? teamMembers.find((t) => t.name === assignee) : null;
 
-    if (orgId) {
+    if (hasValidOrgContext) {
       // Server-synced path
       setSaving(true);
       try {
-        const serverLineItems = estimateMode
+        const serverLineItems = estimateEnabled
           ? lineItems.map((li) => ({
               description: li.description,
               quantity: 1,
@@ -305,7 +322,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           organization_id: orgId,
           title: title.trim(),
           description: description.trim() || null,
-          status: (estimateMode ? "backlog" : status) as "urgent" | "backlog" | "todo" | "in_progress" | "done" | "cancelled",
+          status: (estimateEnabled ? "backlog" : status) as "urgent" | "backlog" | "todo" | "in_progress" | "done" | "cancelled",
           priority,
           client_id: selectedClient?.id || null,
           assignee_id: (assigneeMember as any)?.id || null,
@@ -314,13 +331,13 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           location_lat: selectedClient?.addressCoords?.lat || null,
           location_lng: selectedClient?.addressCoords?.lng || null,
           labels: [],
-          revenue: estimateMode && quoteTotal > 0 ? quoteTotal : null,
+          revenue: estimateEnabled && quoteTotal > 0 ? quoteTotal : null,
           line_items: serverLineItems,
         });
 
         if (result.success) {
-          const displayId = result.displayId || "New Job";
-          if (estimateMode && quoteTotal > 0) {
+          const displayId = result.displayId || t("New Job");
+          if (estimateEnabled && quoteTotal > 0) {
             addToast(`${displayId} created — Quote $${quoteTotal.toLocaleString()} sent`);
           } else {
             addToast(`${displayId} created`);
@@ -404,7 +421,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
             {/* ── Header — PRD: breadcrumb left, minimize/close right ── */}
             <div className="flex shrink-0 items-center justify-between gap-4 px-6 py-3.5">
               <span className="text-[12px] text-zinc-500">
-                {orgName || "Organization"} <span className="text-zinc-600">&gt;</span> New Job
+                {orgName || "Organization"} <span className="text-zinc-600">&gt;</span> {t("New Job")}
               </span>
               <div className="flex items-center gap-2">
                 <kbd className="rounded bg-white/5 px-1.5 py-0.5 font-mono text-[9px] text-zinc-600">
@@ -706,6 +723,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
               {/* ══════════════════════════════════════════════ */}
               {/* ZONE 3: Financials (The Quote Engine)          */}
               {/* ══════════════════════════════════════════════ */}
+              {!isCare && (
               <div className="border-t border-[var(--border-base)] px-6 py-4">
                 {/* Toggle */}
                 <div className="mb-3 flex items-center justify-between">
@@ -724,7 +742,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                     <DollarSign size={12} className="text-zinc-600" />
                     Generate Estimate
                   </label>
-                  {estimateMode && quoteTotal > 0 && (
+                  {estimateEnabled && quoteTotal > 0 && (
                     <motion.span
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -736,7 +754,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 </div>
 
                 <AnimatePresence>
-                  {estimateMode && (
+                  {estimateEnabled && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
@@ -841,6 +859,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   )}
                 </AnimatePresence>
               </div>
+              )}
             </div>
 
             {/* ── Footer / Action Row ───────────────────────── */}
@@ -862,8 +881,8 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                 Create more
               </label>
 
-              {/* Submit — PRD: "Create Issue" #5E6AD2 (Blurple) */}
-              {estimateMode && quoteTotal > 0 ? (
+              {/* Submit — dynamic per sector */}
+              {estimateEnabled && quoteTotal > 0 ? (
                 <motion.button
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSave}
@@ -882,7 +901,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
                   className="flex items-center gap-2 rounded-md bg-[var(--brand)] px-4 py-2 text-[13px] font-medium text-black transition-colors hover:bg-[var(--brand-hover)] disabled:opacity-50"
                 >
                   <Check size={12} />
-                  {saving ? "Saving..." : "Create Issue"}
+                  {saving ? "Saving..." : t("Create Job")}
                   <kbd className="rounded bg-white/15 px-1 py-0.5 font-mono text-[9px]">⌘↵</kbd>
                 </motion.button>
               )}

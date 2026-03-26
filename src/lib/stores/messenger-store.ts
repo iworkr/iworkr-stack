@@ -94,6 +94,7 @@ interface MessengerState {
   votePoll: (messageId: string, optionIndex: number) => Promise<void>;
 
   // Channel actions
+  addChannelLocally: (channel: Channel) => void;
   createGroupChannel: (orgId: string, name: string, memberIds: string[]) => Promise<Channel | null>;
   openDM: (orgId: string, otherUserId: string) => Promise<Channel | null>;
 
@@ -252,6 +253,14 @@ export const useMessengerStore = create<MessengerState>()((set, get) => ({
         return { messages: updated };
       });
     }
+  },
+
+  addChannelLocally: (channel: Channel) => {
+    set((s) => {
+      const exists = s.channels.some((c) => c.id === channel.id);
+      if (exists) return s;
+      return { channels: [channel, ...s.channels] };
+    });
   },
 
   createGroupChannel: async (orgId: string, name: string, memberIds: string[]) => {

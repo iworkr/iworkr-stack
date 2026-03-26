@@ -59,7 +59,7 @@ export function FamilyPortalShell({ participants, activeParticipantId }: Props) 
             startTransition(() => {
               const params = new URLSearchParams(searchParams.toString());
               params.set("participant", e.target.value);
-              router.push(`${pathname}?${params.toString()}`);
+              router.replace(`${pathname}?${params.toString()}`);
             })
           }
         >

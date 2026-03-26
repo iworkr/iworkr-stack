@@ -53,20 +53,25 @@ Future<RouteRun?> generateOptimizedRoute() async {
 
   final orgRow = await SupabaseService.client
       .from('organization_members')
-      .select('organization_id')
+      .select('organization_id, branch_id')
       .eq('user_id', user.id)
       .limit(1)
       .maybeSingle();
   if (orgRow == null) return null;
   final orgId = orgRow['organization_id'] as String;
+  final branchId = orgRow['branch_id'] as String?;
 
   final today = DateTime.now().toIso8601String().split('T').first;
-  final jobs = await SupabaseService.client
+  final jobsQuery = SupabaseService.client
       .from('jobs')
       .select('id, title, location, location_lat, location_lng, priority, estimated_duration_minutes, clients(name)')
       .eq('assignee_id', user.id)
       .inFilter('status', ['todo', 'in_progress'])
       .isFilter('deleted_at', null);
+
+  final jobs = branchId != null && branchId.isNotEmpty
+      ? await jobsQuery.eq('branch_id', branchId)
+      : await jobsQuery;
 
   final jobList = jobs as List;
   if (jobList.isEmpty) return null;

@@ -37,7 +37,6 @@ import {
 } from "@/app/actions/workforce-dossier";
 import { getSchadsRates } from "@/app/actions/staff-profiles";
 import { LetterAvatar } from "@/components/ui/letter-avatar";
-import { InviteModal } from "@/components/team/invite-modal";
 import { useTeamStore } from "@/lib/team-store";
 
 /* ── Constants ────────────────────────────────────────── */
@@ -498,7 +497,6 @@ export default function WorkforceTeamPage() {
           </>
         )}
       </div>
-      <InviteModal />
     </motion.div>
   );
 }

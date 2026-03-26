@@ -27,6 +27,7 @@ import { GlobalErrorBoundary } from "@/components/telemetry/global-error-boundar
 import { TelemetryProvider } from "@/components/telemetry/telemetry-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { InactivityGuard } from "@/components/shell/inactivity-guard";
+import { useCommandStore } from "@/lib/stores/useCommandStore";
 
 const ImpersonationBanner = dynamic(() => import("@/components/olympus/impersonation-banner").then((m) => m.ImpersonationBanner), { ssr: false });
 
@@ -39,10 +40,14 @@ const CommandMenu = dynamic(() => import("@/components/shell/command-menu").then
 const CreateJobModal = dynamic(() => import("@/components/app/create-job-modal").then((m) => m.CreateJobModal), { ssr: false });
 const CreateClientModal = dynamic(() => import("@/components/app/create-client-modal").then((m) => m.CreateClientModal), { ssr: false });
 const CreateInvoiceModal = dynamic(() => import("@/components/app/create-invoice-modal").then((m) => m.CreateInvoiceModal), { ssr: false });
-const KeyboardShortcuts = dynamic(() => import("@/components/app/keyboard-shortcuts").then((m) => m.KeyboardShortcuts), { ssr: false });
+const KeyboardShortcutsModal = dynamic(
+  () => import("@/components/ui/KeyboardShortcutsModal").then((m) => m.KeyboardShortcutsModal),
+  { ssr: false }
+);
 const UpgradeCelebration = dynamic(() => import("@/components/monetization/upgrade-celebration").then((m) => m.UpgradeCelebration), { ssr: false });
 const UpgradeModal = dynamic(() => import("@/components/app/upgrade-modal").then((m) => m.UpgradeModal), { ssr: false });
 const CtiScreenPop = dynamic(() => import("@/components/communications/screen-pop").then((m) => m.ScreenPop), { ssr: false });
+const InviteModal = dynamic(() => import("@/components/team/invite-modal").then((m) => m.InviteModal), { ssr: false });
 // ChronosFAB removed — will be re-enabled when Chronos feature is ready
 
 export default function DashboardLayout({
@@ -65,7 +70,8 @@ export default function DashboardLayout({
 
   const createModalOpen = createJobModalOpen;
   const setCreateModalOpen = setCreateJobModalOpen;
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const isShortcutModalOpen = useCommandStore((s) => s.isShortcutModalOpen);
+  const toggleShortcutModal = useCommandStore((s) => s.toggleShortcutModal);
   const pendingGRef = useRef(false);
   const gTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -75,7 +81,7 @@ export default function DashboardLayout({
       // Don't trigger in inputs
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (commandMenuOpen || createModalOpen || createClientModalOpen || createInvoiceModalOpen || shortcutsOpen) return;
+      if (commandMenuOpen || createModalOpen || createClientModalOpen || createInvoiceModalOpen || isShortcutModalOpen) return;
 
       // ⌘[ sidebar toggle
       if ((e.metaKey || e.ctrlKey) && e.key === "[") {
@@ -88,6 +94,20 @@ export default function DashboardLayout({
       if ((e.metaKey || e.ctrlKey) && e.key === ",") {
         e.preventDefault();
         router.push("/settings");
+        return;
+      }
+
+      // ⌘N / Ctrl+N — open new message modal (dashboard-global)
+      if ((e.metaKey || e.ctrlKey) && (e.key === "n" || e.key === "N")) {
+        e.preventDefault();
+        if (!pathname.startsWith("/dashboard/messages")) {
+          router.push("/dashboard/messages");
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent("messenger:new-message"));
+          }, 80);
+        } else {
+          window.dispatchEvent(new CustomEvent("messenger:new-message"));
+        }
         return;
       }
 
@@ -143,10 +163,10 @@ export default function DashboardLayout({
         }
       }
 
-      // ? — keyboard shortcuts
-      if (e.key === "?") {
+      // Shift + ? — keyboard shortcuts
+      if (e.shiftKey && (e.key === "?" || e.key === "/")) {
         e.preventDefault();
-        setShortcutsOpen(true);
+        toggleShortcutModal();
         return;
       }
     },
@@ -155,9 +175,13 @@ export default function DashboardLayout({
       createModalOpen,
       createClientModalOpen,
       createInvoiceModalOpen,
-      shortcutsOpen,
+      isShortcutModalOpen,
       toggleSidebar,
+      setCreateClientModalOpen,
+      setCreateModalOpen,
+      toggleShortcutModal,
       router,
+      pathname,
     ]
   );
 
@@ -259,10 +283,7 @@ export default function DashboardLayout({
         open={createInvoiceModalOpen}
         onClose={() => setCreateInvoiceModalOpen(false)}
       />
-      <KeyboardShortcuts
-        open={shortcutsOpen}
-        onClose={() => setShortcutsOpen(false)}
-      />
+      <KeyboardShortcutsModal />
       <ActionToastContainer />
       <NotificationToastContainer />
       <UpgradeModal />
@@ -271,6 +292,7 @@ export default function DashboardLayout({
       <DesktopBadge />
       <DesktopOfflineBanner />
       <CtiScreenPopWrapper />
+      <InviteModal />
       {/* ChronosFAB removed — will be re-enabled when Chronos feature is ready */}
     </div>
     </InactivityGuard>

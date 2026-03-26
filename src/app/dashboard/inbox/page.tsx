@@ -1,251 +1,392 @@
 /**
  * @page /dashboard/inbox
  * @status COMPLETE
- * @description Unified inbox with sidebar, chat stream, triage panel, and mentions
- * @dataSource server-action
- * @lastAudit 2026-03-22
+ * @description Echo-Triage inbox with split-pane triage list and context viewer
+ * @dataSource notifications table + contextual entity fetches
+ * @lastAudit 2026-03-26
  */
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Radio } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Bell,
+  Briefcase,
+  CircleDollarSign,
+  ShieldAlert,
+  MessageSquare,
+  CheckCheck,
+  ExternalLink,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth-store";
-import { useMessengerStore } from "@/lib/stores/messenger-store";
-import { MessengerSidebar } from "@/components/messenger/messenger-sidebar";
-import { ChatStream } from "@/components/messenger/chat-stream";
-import { TriagePanel } from "@/components/messenger/triage-panel";
-import { MentionsPanel } from "@/components/messenger/mentions-panel";
+import { useInboxStore } from "@/lib/inbox-store";
+import { markAllRead } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client";
-import { LottieIcon } from "@/components/dashboard/lottie-icon";
-import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
-import { useIndustryLexicon } from "@/lib/industry-lexicon";
-import type { Message } from "@/lib/stores/messenger-store";
 
-/* ── Empty state: Holographic Radar — PRD Design Revamp: richer + intentional ── */
-function EmptyStateRadar() {
-  return (
-    <div className="relative flex flex-1 flex-col items-center justify-center text-center">
-      {/* Noise texture */}
-      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.015]" />
+type CategoryFilter = "all" | "unread" | "jobs" | "finance" | "compliance" | "message" | "system";
+type ContextKind = "none" | "job" | "invoice" | "client";
 
-      {/* Ambient glow — neutral */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/[0.015] blur-[100px]" />
+interface ContextState {
+  kind: ContextKind;
+  loading: boolean;
+  data: Record<string, unknown> | null;
+}
 
-      {/* Mono overline */}
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="mb-6 font-mono text-[9px] font-bold tracking-widest text-zinc-700 uppercase"
-      >
-        COMMS · STANDBY
-      </motion.span>
+const FILTERS: { id: CategoryFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "unread", label: "Unread" },
+  { id: "jobs", label: "Jobs" },
+  { id: "finance", label: "Finance" },
+  { id: "compliance", label: "Compliance" },
+  { id: "message", label: "Message" },
+  { id: "system", label: "System" },
+];
 
-      {/* Lottie radar */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mb-8"
-      >
-        <LottieIcon
-          animationData={radarScanAnimation}
-          size={160}
-          loop
-          autoplay
-          className="opacity-70"
-        />
-        {/* Outer ring — subtle */}
-        <div className="absolute inset-[-4px] rounded-full border border-white/[0.04]" />
-      </motion.div>
+function classifyCategory(type: string): Exclude<CategoryFilter, "all" | "unread"> {
+  if (type.includes("invoice") || type.includes("finance")) return "finance";
+  if (type.includes("compliance") || type.includes("review")) return "compliance";
+  if (type.includes("message") || type.includes("mention") || type.includes("chat")) return "message";
+  if (type.includes("job") || type.includes("shift") || type.includes("schedule")) return "jobs";
+  return "system";
+}
 
-      <motion.h3
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.5 }}
-        className="font-display text-[18px] font-semibold tracking-tight text-white"
-      >
-        No Signal Detected
-      </motion.h3>
-
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-2 max-w-[300px] text-[13px] leading-relaxed text-zinc-500"
-      >
-        Select a channel from the sidebar to establish connection, or start a new transmission.
-      </motion.p>
-
-      {/* Keyboard hint */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-4 flex items-center gap-3"
-      >
-        <div className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5">
-          <kbd className="font-mono text-[10px] font-medium text-zinc-600">⌘</kbd>
-          <kbd className="font-mono text-[10px] font-medium text-zinc-600">K</kbd>
-          <span className="ml-1 text-[10px] text-zinc-700">Jump to channel</span>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5">
-          <kbd className="font-mono text-[10px] font-medium text-zinc-600">⌘</kbd>
-          <kbd className="font-mono text-[10px] font-medium text-zinc-600">N</kbd>
-          <span className="ml-1 text-[10px] text-zinc-700">New message</span>
-        </div>
-      </motion.div>
-
-      <motion.button
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.0 }}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="mt-6 flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.02] px-4 py-2 text-[12px] font-medium text-zinc-400 transition-all duration-200 hover:bg-white/[0.05] hover:text-white hover:border-white/[0.12]"
-      >
-        <Radio size={13} />
-        Start a new transmission
-      </motion.button>
-    </div>
-  );
+function relativeTime(input: string): string {
+  const date = new Date(input);
+  if (isNaN(date.getTime())) return input;
+  const delta = Date.now() - date.getTime();
+  const minutes = Math.floor(delta / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function InboxPage() {
-  const { t, isCare } = useIndustryLexicon();
-  const user = useAuthStore((s) => s.user);
-  const profile = useAuthStore((s) => s.profile);
+  const router = useRouter();
   const currentOrg = useAuthStore((s) => s.currentOrg);
-
-  const channels = useMessengerStore((s) => s.channels);
-  const activeChannelId = useMessengerStore((s) => s.activeChannelId);
-  const activeView = useMessengerStore((s) => s.activeView);
-
+  const user = useAuthStore((s) => s.user);
   const orgId = currentOrg?.id;
   const userId = user?.id;
 
-  const channelIdsRef = useRef<string[]>([]);
-  useEffect(() => {
-    channelIdsRef.current = channels.map((c) => c.id);
-  }, [channels]);
+  const items = useInboxStore((s) => s.items);
+  const selectedId = useInboxStore((s) => s.selectedId);
+  const setSelectedId = useInboxStore((s) => s.setSelectedId);
+  const markAsRead = useInboxStore((s) => s.markAsRead);
+  const loadFromServer = useInboxStore((s) => s.loadFromServer);
+
+  const [filter, setFilter] = useState<CategoryFilter>("all");
+  const [markingAll, setMarkingAll] = useState(false);
+  const [contextState, setContextState] = useState<ContextState>({
+    kind: "none",
+    loading: false,
+    data: null,
+  });
 
   useEffect(() => {
-    if (!userId || channels.length === 0) return;
+    if (orgId) {
+      void loadFromServer(orgId);
+    }
+  }, [orgId, loadFromServer]);
+
+  const filteredItems = useMemo(() => {
+    const base = items.filter((item) => !item.archived);
+    if (filter === "all") return base;
+    if (filter === "unread") return base.filter((item) => !item.read);
+    return base.filter((item) => classifyCategory(item.type) === filter);
+  }, [items, filter]);
+
+  const selected = useMemo(
+    () => filteredItems.find((item) => item.id === selectedId) ?? filteredItems[0] ?? null,
+    [filteredItems, selectedId],
+  );
+
+  useEffect(() => {
+    if (!selected) return;
+    if (selected.id !== selectedId) {
+      setSelectedId(selected.id);
+    }
+  }, [selected, selectedId, setSelectedId]);
+
+  useEffect(() => {
+    if (!selected) {
+      setContextState({ kind: "none", loading: false, data: null });
+      return;
+    }
 
     const supabase = createClient();
+    let active = true;
+    setContextState((prev) => ({ ...prev, loading: true }));
 
-    const subscription = supabase
-      .channel(`messenger:${userId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        (payload) => {
-          try {
-            const newMsg = payload?.new as Record<string, unknown> | undefined;
-            if (
-              !newMsg ||
-              typeof newMsg.channel_id !== "string" ||
-              typeof newMsg.sender_id !== "string" ||
-              typeof newMsg.id !== "string"
-            )
-              return;
-            if (
-              !channelIdsRef.current.includes(newMsg.channel_id) ||
-              newMsg.sender_id === userId
-            )
-              return;
-            void supabase
-              .from("messages")
-              .select("*, profiles:sender_id(id, full_name, avatar_url)")
-              .eq("id", newMsg.id)
-              .single()
-              .then(({ data }) => {
-                if (data) useMessengerStore.getState().addRealtimeMessage(data as Message);
-              });
-          } catch {
-            // ignore malformed payloads
-          }
-        },
-      )
-      .subscribe();
+    const loadContext = async () => {
+      if (selected.jobRef) {
+        const { data } = await supabase
+          .from("jobs")
+          .select("id, title, status, priority, scheduled_start")
+          .eq("id", selected.jobRef)
+          .maybeSingle();
+        if (!active) return;
+        setContextState({ kind: "job", loading: false, data: (data as Record<string, unknown> | null) ?? null });
+        return;
+      }
 
-    return () => {
-      supabase.removeChannel(subscription);
+      const entityType = selected.relatedEntityType ?? "";
+      const entityId = selected.relatedEntityId ?? selected.referenceId ?? "";
+
+      if ((entityType.includes("invoice") || selected.type.includes("invoice")) && entityId) {
+        const { data } = await supabase
+          .from("invoices")
+          .select("id, invoice_number, status, total, due_date")
+          .eq("id", entityId)
+          .maybeSingle();
+        if (!active) return;
+        setContextState({ kind: "invoice", loading: false, data: (data as Record<string, unknown> | null) ?? null });
+        return;
+      }
+
+      if ((entityType.includes("client") || selected.type === "team_invite") && entityId) {
+        const { data } = await supabase
+          .from("clients")
+          .select("id, name, email, phone, status")
+          .eq("id", entityId)
+          .maybeSingle();
+        if (!active) return;
+        setContextState({ kind: "client", loading: false, data: (data as Record<string, unknown> | null) ?? null });
+        return;
+      }
+
+      setContextState({ kind: "none", loading: false, data: null });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, channels.length]);
 
-  const activeChannel = channels.find((c) => c.id === activeChannelId);
-  const userProfile = useMemo(() => ({
-    id: userId || "",
-    full_name: profile?.full_name || "You",
-    avatar_url: profile?.avatar_url || null,
-  }), [userId, profile?.full_name, profile?.avatar_url]);
+    void loadContext();
+    return () => {
+      active = false;
+    };
+  }, [selected]);
 
-  // Avoid rendering messenger until we have a user (prevents undefined access downstream)
+  const unreadCount = useMemo(() => items.filter((item) => !item.read && !item.archived).length, [items]);
+
+  const handleOpenItem = (id: string) => {
+    setSelectedId(id);
+    const item = items.find((i) => i.id === id);
+    if (item && !item.read) {
+      markAsRead(id);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await markAllRead();
+      useInboxStore.setState((s) => ({
+        items: s.items.map((i) => ({ ...i, read: true })),
+      }));
+    } finally {
+      setMarkingAll(false);
+    }
+  };
+
   if (!userId) {
     return (
-      <div className="relative flex h-full items-center justify-center overflow-hidden bg-[var(--background)]">
-        <p className="text-[13px] text-zinc-500">Loading messages…</p>
+      <div className="flex h-full items-center justify-center bg-[var(--background)]">
+        <p className="text-[13px] text-zinc-500">Loading inbox…</p>
       </div>
     );
   }
 
   return (
     <div className="relative flex h-full overflow-hidden bg-[var(--background)]">
-      {/* Noise texture — PRD Design Revamp */}
-      <div className="stealth-noise" />
+      <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
 
-      <MessengerSidebar userId={userId} orgId={currentOrg?.id ?? undefined} />
+      <aside className="relative z-10 flex w-[360px] shrink-0 flex-col border-r border-white/[0.06] bg-black/30">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Bell size={14} className="text-emerald-500/80" />
+            <h2 className="text-[14px] font-semibold tracking-tight text-white">Echo-Triage</h2>
+            <span className="rounded bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-zinc-500">
+              {filteredItems.length}
+            </span>
+          </div>
+          {unreadCount > 0 && (
+            <button
+              onClick={() => void handleMarkAllRead()}
+              disabled={markingAll}
+              className="flex items-center gap-1 rounded-md border border-white/[0.08] px-2 py-1 text-[10px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300 disabled:opacity-50"
+            >
+              <CheckCheck size={11} />
+              Mark all read
+            </button>
+          )}
+        </div>
 
-      <AnimatePresence mode="wait">
-        {activeView === "triage" ? (
-          <motion.div
-            key="triage"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-1 overflow-hidden"
-          >
-            <TriagePanel />
-          </motion.div>
-        ) : activeView === "mentions" ? (
-          <motion.div
-            key="mentions"
-            initial={{ opacity: 0, x: 10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -10 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-1 overflow-hidden"
-          >
-            <MentionsPanel />
-          </motion.div>
-        ) : activeChannel ? (
-          <ChatStream
-            key={activeChannel.id}
-            channel={activeChannel}
-            userId={userId}
-            userProfile={userProfile}
-          />
+        <div className="flex flex-wrap gap-1.5 border-b border-white/[0.06] px-3 py-2">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`rounded-md px-2 py-1 text-[11px] transition-colors ${
+                filter === f.id
+                  ? "bg-white/[0.08] text-white"
+                  : "text-zinc-600 hover:bg-white/[0.04] hover:text-zinc-300"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          {filteredItems.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <p className="text-[13px] font-medium text-zinc-400">No notifications</p>
+              <p className="mt-1 text-[11px] text-zinc-600">You are fully triaged.</p>
+            </div>
+          ) : (
+            filteredItems.map((item) => {
+              const isSelected = selected?.id === item.id;
+              const category = classifyCategory(item.type);
+              const categoryIcon =
+                category === "jobs" ? Briefcase :
+                category === "finance" ? CircleDollarSign :
+                category === "compliance" ? ShieldAlert :
+                category === "message" ? MessageSquare : Bell;
+
+              const CategoryIcon = categoryIcon;
+
+              return (
+                <motion.button
+                  key={item.id}
+                  onClick={() => handleOpenItem(item.id)}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mb-1.5 w-full rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                    isSelected
+                      ? "border-white/[0.16] bg-white/[0.05]"
+                      : "border-white/[0.04] bg-transparent hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className="mt-0.5 rounded-md bg-white/[0.04] p-1.5">
+                      <CategoryIcon size={12} className="text-zinc-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`truncate text-[12px] font-medium ${item.read ? "text-zinc-400" : "text-white"}`}>
+                          {item.title}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-zinc-600">
+                          {relativeTime(item.time)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 line-clamp-2 text-[11px] text-zinc-600">{item.body}</p>
+                    </div>
+                  </div>
+                </motion.button>
+              );
+            })
+          )}
+        </div>
+      </aside>
+
+      <section className="relative z-10 flex flex-1 flex-col">
+        {!selected ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <p className="text-[15px] font-semibold text-white">Select a notification</p>
+            <p className="mt-2 max-w-[280px] text-[12px] text-zinc-600">
+              Open an alert from the left pane to inspect context and resolve quickly.
+            </p>
+          </div>
         ) : (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-1"
-          >
-            <EmptyStateRadar />
-          </motion.div>
+          <>
+            <div className="border-b border-white/[0.06] bg-black/30 px-5 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-[14px] font-semibold text-white">{selected.title}</h3>
+                  <p className="mt-1 text-[12px] text-zinc-500">{selected.body}</p>
+                </div>
+                {selected.actionUrl && (
+                  <button
+                    onClick={() => router.push(selected.actionUrl || "/dashboard/inbox")}
+                    className="flex items-center gap-1.5 rounded-md border border-white/[0.08] px-3 py-1.5 text-[11px] text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
+                  >
+                    Open source
+                    <ExternalLink size={11} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {contextState.loading ? (
+                <div className="h-32 animate-pulse rounded-xl border border-white/[0.06] bg-white/[0.02]" />
+              ) : contextState.kind === "job" && contextState.data ? (
+                <ContextCard
+                  title="Job Context"
+                  rows={[
+                    ["Title", String(contextState.data.title ?? "-")],
+                    ["Status", String(contextState.data.status ?? "-")],
+                    ["Priority", String(contextState.data.priority ?? "-")],
+                    ["Scheduled", String(contextState.data.scheduled_start ?? "-")],
+                  ]}
+                />
+              ) : contextState.kind === "invoice" && contextState.data ? (
+                <ContextCard
+                  title="Finance Context"
+                  rows={[
+                    ["Invoice", String(contextState.data.invoice_number ?? contextState.data.id ?? "-")],
+                    ["Status", String(contextState.data.status ?? "-")],
+                    ["Total", `$${String(contextState.data.total ?? "0")}`],
+                    ["Due", String(contextState.data.due_date ?? "-")],
+                  ]}
+                />
+              ) : contextState.kind === "client" && contextState.data ? (
+                <ContextCard
+                  title="Client Context"
+                  rows={[
+                    ["Name", String(contextState.data.name ?? "-")],
+                    ["Email", String(contextState.data.email ?? "-")],
+                    ["Phone", String(contextState.data.phone ?? "-")],
+                    ["Status", String(contextState.data.status ?? "-")],
+                  ]}
+                />
+              ) : (
+                <ContextCard
+                  title="Alert Context"
+                  rows={[
+                    ["Type", selected.type],
+                    ["Sender", selected.sender],
+                    ["Received", selected.time],
+                    ["Context", selected.context || "No additional context"],
+                  ]}
+                />
+              )}
+            </div>
+          </>
         )}
-      </AnimatePresence>
+      </section>
+    </div>
+  );
+}
+
+function ContextCard({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: [string, string][];
+}) {
+  return (
+    <div className="max-w-2xl rounded-xl border border-white/[0.08] bg-white/[0.02] p-4">
+      <h4 className="text-[13px] font-semibold text-white">{title}</h4>
+      <div className="mt-3 space-y-2">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex items-center justify-between gap-3 border-b border-white/[0.04] pb-2 text-[12px]">
+            <span className="text-zinc-600">{k}</span>
+            <span className="text-right text-zinc-300">{v}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

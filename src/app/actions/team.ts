@@ -38,8 +38,14 @@ const UpdateMemberRoleSchema = z.object({
 
 const UpdateMemberDetailsSchema = z.object({
   branch: z.string().max(100).optional(),
+  branch_id: uuidSchema.nullable().optional(),
   skills: z.array(z.string().max(50)).max(30).optional(),
   hourly_rate: z.number().min(0).max(9999).optional(),
+  phone: z
+    .string()
+    .max(30, "Phone is too long")
+    .regex(/^[+\d\s()-]*$/, "Invalid phone number format")
+    .optional(),
   status: z.enum(["active", "pending", "suspended"]).optional(),
 });
 
@@ -158,8 +164,10 @@ export async function updateMemberDetails(
   userId: string,
   updates: {
     branch?: string;
+    branch_id?: string | null;
     skills?: string[];
     hourly_rate?: number;
+    phone?: string;
     status?: string;
   }
 ) {
@@ -176,13 +184,59 @@ export async function updateMemberDetails(
     const hasPermission = await checkPermission(orgId, "team", "manage");
     if (!hasPermission) return { data: null, error: "Unauthorized" };
 
-    const { error } = await supabase
-      .from("organization_members")
-      .update(updates as any)
-      .eq("organization_id", orgId)
-      .eq("user_id", userId);
+    const { phone, branch, branch_id, ...memberUpdates } = updates;
+    const profilePhone = phone === undefined ? undefined : phone.trim() || null;
+    const membershipUpdates: Record<string, unknown> = { ...memberUpdates };
 
-    if (error) return { data: null, error: error.message };
+    if (branch_id !== undefined) {
+      if (branch_id === null) {
+        membershipUpdates.branch_id = null;
+        membershipUpdates.branch = branch || "HQ";
+      } else {
+        const { data: branchRow, error: branchErr } = await supabase
+          .from("branches")
+          .select("id, name")
+          .eq("id", branch_id)
+          .eq("organization_id", orgId)
+          .maybeSingle();
+        if (branchErr) return { data: null, error: branchErr.message };
+        if (!branchRow) return { data: null, error: "Invalid branch selected" };
+        membershipUpdates.branch_id = branchRow.id;
+        membershipUpdates.branch = branchRow.name;
+      }
+    } else if (branch !== undefined) {
+      membershipUpdates.branch = branch;
+      const { data: branchByName } = await supabase
+        .from("branches")
+        .select("id")
+        .eq("organization_id", orgId)
+        .ilike("name", branch)
+        .limit(1)
+        .maybeSingle();
+      if (branchByName?.id) {
+        membershipUpdates.branch_id = branchByName.id;
+      }
+    }
+
+    if (Object.keys(membershipUpdates).length > 0) {
+      const { error } = await supabase
+        .from("organization_members")
+        .update(membershipUpdates as any)
+        .eq("organization_id", orgId)
+        .eq("user_id", userId);
+
+      if (error) return { data: null, error: error.message };
+    }
+
+    if (profilePhone !== undefined) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ phone: profilePhone })
+        .eq("id", userId);
+
+      if (profileError) return { data: null, error: profileError.message };
+    }
+
     revalidatePath("/dashboard/team");
     return { data: { success: true }, error: null };
   } catch (err: any) {

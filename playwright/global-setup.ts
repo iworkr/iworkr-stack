@@ -165,30 +165,85 @@ export default async function globalSetup(config: FullConfig) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const pg = new PgClient({ connectionString: DB_URL });
-  await pg.connect();
+  // ── Attempt PG connection with graceful fallback ──────────────────────────
+  let pg: PgClient | null = null;
+  let pgAvailable = false;
+
+  try {
+    pg = new PgClient({ connectionString: DB_URL });
+    // Set a connection timeout to avoid hanging
+    const connectPromise = pg.connect();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("PG connection timeout")), 5000),
+    );
+    await Promise.race([connectPromise, timeoutPromise]);
+    pgAvailable = true;
+  } catch (err) {
+    console.warn(
+      `⚠️  [Argus-Resilience] Local Postgres unavailable (${(err as Error).message}). ` +
+      `Checking for existing auth state files…`,
+    );
+    pg = null;
+  }
 
   console.log("🚀 [Argus-Resilience] Global setup start");
 
-  // Ensure the seed org exists (idempotent)
-  await pg.query(
-    `INSERT INTO public.organizations (id, slug, name, trade, industry_type)
-     VALUES ($1, 'qa-e2e-workspace', 'QA E2E Workspace', 'care', 'care')
-     ON CONFLICT (id) DO NOTHING`,
-    [SEED_ORG_ID],
-  );
+  // ── If PG available: full seed path ───────────────────────────────────────
+  if (pgAvailable && pg) {
+    // Ensure the seed org exists (idempotent)
+    await pg.query(
+      `INSERT INTO public.organizations (id, slug, name, trade, industry_type)
+       VALUES ($1, 'qa-e2e-workspace', 'QA E2E Workspace', 'care', 'care')
+       ON CONFLICT (id) DO NOTHING`,
+      [SEED_ORG_ID],
+    );
 
-  const adminId = await ensureUser(supabase, pg, ADMIN_EMAIL, ADMIN_PASSWORD, "QA Admin", "owner");
-  const workerId = await ensureUser(supabase, pg, WORKER_EMAIL, WORKER_PASSWORD, "QA Worker", "technician");
+    const adminId = await ensureUser(supabase, pg, ADMIN_EMAIL, ADMIN_PASSWORD, "QA Admin", "owner");
+    const workerId = await ensureUser(supabase, pg, WORKER_EMAIL, WORKER_PASSWORD, "QA Worker", "technician");
 
+    ensureAuthDir();
+
+    await loginAndSaveState(baseURL, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_STATE);
+    fs.copyFileSync(ADMIN_STATE, USER_STATE);
+
+    await loginAndSaveState(baseURL, WORKER_EMAIL, WORKER_PASSWORD, WORKER_STATE);
+
+    await pg.end();
+
+    console.log(`✅ [Argus-Resilience] Setup complete. org=${SEED_ORG_ID} admin=${adminId} worker=${workerId}`);
+    return;
+  }
+
+  // ── Fallback: reuse existing auth state files if available ────────────────
   ensureAuthDir();
 
-  await loginAndSaveState(baseURL, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_STATE);
-  fs.copyFileSync(ADMIN_STATE, USER_STATE);
+  const hasAdmin = fs.existsSync(ADMIN_STATE) && fs.statSync(ADMIN_STATE).size > 100;
+  const hasWorker = fs.existsSync(WORKER_STATE) && fs.statSync(WORKER_STATE).size > 100;
 
-  await loginAndSaveState(baseURL, WORKER_EMAIL, WORKER_PASSWORD, WORKER_STATE);
+  if (hasAdmin && hasWorker) {
+    // Ensure user.json alias is current
+    if (!fs.existsSync(USER_STATE) || fs.statSync(USER_STATE).size < 100) {
+      fs.copyFileSync(ADMIN_STATE, USER_STATE);
+    }
+    console.log(
+      `✅ [Argus-Resilience] Reusing existing auth state files (PG unavailable). ` +
+      `admin=${ADMIN_STATE} worker=${WORKER_STATE}`,
+    );
+    return;
+  }
 
-  await pg.end();
+  // ── Last resort: try browser-based login without PG seeding ───────────────
+  console.log("⚠️  [Argus-Resilience] No cached auth state. Attempting browser login without PG seed…");
 
-  console.log(`✅ [Argus-Resilience] Setup complete. org=${SEED_ORG_ID} admin=${adminId} worker=${workerId}`);
+  try {
+    await loginAndSaveState(baseURL, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_STATE);
+    fs.copyFileSync(ADMIN_STATE, USER_STATE);
+    await loginAndSaveState(baseURL, WORKER_EMAIL, WORKER_PASSWORD, WORKER_STATE);
+    console.log("✅ [Argus-Resilience] Browser login succeeded without PG.");
+  } catch (loginErr) {
+    console.error(
+      `❌ [Argus-Resilience] Browser login failed: ${(loginErr as Error).message}. ` +
+      `Tests requiring auth will fail.`,
+    );
+  }
 }

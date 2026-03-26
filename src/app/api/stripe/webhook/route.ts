@@ -24,6 +24,29 @@ function getSupabase() {
   );
 }
 
+async function persistStripeWebhookFailure(
+  supabase: any,
+  event: Stripe.Event,
+  errorMessage: string
+) {
+  try {
+    await supabase
+      .from("stripe_webhook_failures")
+      .upsert(
+        {
+          stripe_event_id: event.id,
+          event_type: event.type,
+          payload: event.data.object,
+          error_message: errorMessage,
+          resolved: false,
+        },
+        { onConflict: "stripe_event_id" }
+      );
+  } catch (persistErr: any) {
+    console.error("[Stripe Webhook] Failed to persist DLQ event:", persistErr?.message || persistErr);
+  }
+}
+
 async function getOrgOwnerEmail(
   supabase: any,
   orgId: string
@@ -131,6 +154,17 @@ export async function POST(req: NextRequest) {
       webhook_id: webhookId,
       error_message: `Inline processing: ${err.message}`,
     });
+
+    await persistStripeWebhookFailure(
+      supabase,
+      event,
+      `Inline processing failed: ${err.message || "Unknown error"}`
+    );
+
+    return NextResponse.json(
+      { error: "Webhook processing failed; event queued for retry." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ received: true });
@@ -168,7 +202,11 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
         },
         { onConflict: "stripe_subscription_id" }
       );
-      if (subErr) console.error("[Stripe Webhook] subscription upsert failed:", subErr.message, subErr.details, subErr.hint);
+      if (subErr) {
+        throw new Error(
+          `[Stripe Webhook] subscription upsert failed: ${subErr.message}`
+        );
+      }
 
       const { error: orgErr } = await supabase
         .from("organizations")
@@ -178,7 +216,11 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
           ...(periodEnd ? { subscription_active_until: new Date(periodEnd * 1000).toISOString() } : {}),
         })
         .eq("id", orgId);
-      if (orgErr) console.error("[Stripe Webhook] org update failed:", orgErr.message, orgErr.details);
+      if (orgErr) {
+        throw new Error(
+          `[Stripe Webhook] org update failed: ${orgErr.message}`
+        );
+      }
 
       const owner = await getOrgOwnerEmail(supabase, orgId);
       if (owner) {
@@ -228,7 +270,11 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
         .from("subscriptions")
         .update(updateData)
         .eq("stripe_subscription_id", sub.id);
-      if (updErr) console.error("[Stripe Webhook] subscription update failed:", updErr.message, updErr.details);
+      if (updErr) {
+        throw new Error(
+          `[Stripe Webhook] subscription update failed: ${updErr.message}`
+        );
+      }
 
       if (orgId) {
         const { error: orgUpdErr } = await supabase
@@ -238,7 +284,11 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
             ...(periodEnd ? { subscription_active_until: new Date(periodEnd * 1000).toISOString() } : {}),
           })
           .eq("id", orgId);
-        if (orgUpdErr) console.error("[Stripe Webhook] org plan update failed:", orgUpdErr.message);
+        if (orgUpdErr) {
+          throw new Error(
+            `[Stripe Webhook] org plan update failed: ${orgUpdErr.message}`
+          );
+        }
 
         if (sub.cancel_at_period_end && periodEnd) {
           const owner = await getOrgOwnerEmail(supabase, orgId);
@@ -264,22 +314,32 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
       const sub = event.data.object as any;
       const orgId = sub.metadata?.organization_id;
 
-      await supabase
+      const { error: subDeleteErr } = await supabase
         .from("subscriptions")
         .update({
           status: "canceled",
           canceled_at: new Date().toISOString(),
         })
         .eq("stripe_subscription_id", sub.id);
+      if (subDeleteErr) {
+        throw new Error(
+          `[Stripe Webhook] subscription delete update failed: ${subDeleteErr.message}`
+        );
+      }
 
       if (orgId) {
-        await supabase
+        const { error: orgDeleteErr } = await supabase
           .from("organizations")
           .update({
             plan_tier: "free",
             billing_provider: "free",
           })
           .eq("id", orgId);
+        if (orgDeleteErr) {
+          throw new Error(
+            `[Stripe Webhook] org downgrade failed: ${orgDeleteErr.message}`
+          );
+        }
 
         const owner = await getOrgOwnerEmail(supabase, orgId);
         if (owner) {
@@ -336,10 +396,15 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
 
       if (orgId) {
         if (invoice.subscription) {
-          await supabase
+          const { error: pastDueErr } = await supabase
             .from("subscriptions")
             .update({ status: "past_due" })
             .eq("stripe_subscription_id", invoice.subscription);
+          if (pastDueErr) {
+            throw new Error(
+              `[Stripe Webhook] subscription past_due update failed: ${pastDueErr.message}`
+            );
+          }
         }
 
         const owner = await getOrgOwnerEmail(supabase, orgId);
@@ -369,7 +434,7 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
       const payoutsEnabled = account.payouts_enabled;
 
       if (account.metadata?.organization_id) {
-        await supabase
+        const { error: accountErr } = await supabase
           .from("organizations")
           .update({
             charges_enabled: chargesEnabled,
@@ -379,6 +444,11 @@ async function processStripeEvent(event: Stripe.Event, supabase: any) {
               : {}),
           })
           .eq("stripe_account_id", account.id);
+        if (accountErr) {
+          throw new Error(
+            `[Stripe Webhook] connect account update failed: ${accountErr.message}`
+          );
+        }
       }
       break;
     }

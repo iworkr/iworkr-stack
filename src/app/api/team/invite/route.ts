@@ -23,7 +23,7 @@ import { sendInviteEmail } from "@/lib/email";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, role, branch, orgId: requestedOrgId } = body;
+    const { email, role, branch, branch_id, orgId: requestedOrgId } = body;
 
     if (!email || !role) {
       return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
@@ -73,6 +73,23 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    let resolvedBranchId: string | null = null;
+    if (typeof branch_id === "string" && branch_id.trim().length > 0) {
+      const { data: validBranch, error: branchErr } = await serviceClient
+        .from("branches")
+        .select("id")
+        .eq("id", branch_id)
+        .eq("organization_id", orgId)
+        .maybeSingle();
+      if (branchErr) {
+        return NextResponse.json({ error: branchErr.message }, { status: 500 });
+      }
+      if (!validBranch?.id) {
+        return NextResponse.json({ error: "Invalid branch selected" }, { status: 400 });
+      }
+      resolvedBranchId = validBranch.id;
+    }
+
     // Check if already a member
     const { data: existingProfile } = await serviceClient
       .from("profiles")
@@ -104,6 +121,7 @@ export async function POST(req: NextRequest) {
           organization_id: orgId,
           email,
           role: role || "technician",
+          branch_id: resolvedBranchId,
           status: "pending",
           invited_by: user.id,
           token,
@@ -127,7 +145,7 @@ export async function POST(req: NextRequest) {
         action: "member.invited",
         entity_type: "organization_invite",
         entity_id: invite.id,
-        new_data: { email, role: role || "technician" },
+        new_data: { email, role: role || "technician", branch, branch_id: resolvedBranchId },
       });
     } catch { /* audit is non-fatal */ }
 
@@ -174,6 +192,7 @@ export async function POST(req: NextRequest) {
       invite_id: invite.id,
       email,
       role,
+      branch_id: resolvedBranchId,
       expires_at: expiresAt,
       email_sent: emailSent,
     });

@@ -9,24 +9,26 @@
  */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useActiveBranch } from "@/lib/hooks/use-active-branch";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useMapbox, MAPBOX_ACCESS_TOKEN } from "@/components/maps/mapbox-provider";
 import { OBSIDIAN_MAP_STYLE, applyObsidianStyle, DEFAULT_MAP_CENTER } from "@/components/maps/obsidian-map-styles";
 import { MapOfflineFallback } from "@/components/maps/map-offline-fallback";
 import {
-  getWorkersWithBlocks,
+  getDispatchableWorkers,
   getOptimizableBlocks,
   optimizeWorkerRoute,
   commitOptimizedRoute,
   togglePinBlock,
-  type OptimizableStop,
   type ProposedBlock,
   type OptimizationResult,
 } from "@/app/actions/route-optimization";
+import { calculateOptimalRoute, type RoutingStop, type OptimizedRouteResult } from "@/lib/services/routing";
 import {
-  Route, Lock, Unlock, Play, Check, ChevronLeft, ChevronRight,
+  Route, Lock, Unlock, Check, ChevronLeft, ChevronRight,
   MapPin, Clock, Navigation, TrendingDown, Zap, Loader2,
   Package, User, ArrowRight,
 } from "lucide-react";
@@ -34,8 +36,10 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export default function RouteOptimizerPage() {
   const { orgId } = useOrg();
+  const [activeBranchId] = useActiveBranch();
   const { t } = useIndustryLexicon();
   const { isLoaded } = useMapbox();
+  const queryClient = useQueryClient();
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -46,44 +50,102 @@ export default function RouteOptimizerPage() {
     return d.toISOString().split("T")[0];
   });
 
-  const [workers, setWorkers] = useState<Array<{
-    id: string; full_name: string; avatar_url: string | null;
-    block_count: number; has_coordinates: boolean;
-  }>>([]);
   const [selectedWorker, setSelectedWorker] = useState<string | null>(null);
-  const [blocks, setBlocks] = useState<OptimizableStop[]>([]);
   const [proposedResult, setProposedResult] = useState<OptimizationResult | null>(null);
-  const [loading, setLoading] = useState(false);
   const [optimizing, setOptimizing] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [committed, setCommitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewRoute, setPreviewRoute] = useState<OptimizedRouteResult | null>(null);
 
-  // Load workers for date
-  const loadWorkers = useCallback(async () => {
-    if (!orgId) return;
-    setLoading(true);
-    const { workers: w } = await getWorkersWithBlocks(orgId, selectedDate);
-    setWorkers(w);
-    setLoading(false);
-    if (w.length > 0 && !selectedWorker) {
-      setSelectedWorker(w[0].id);
+  const { data: technicians = [], isLoading: loadingTechnicians } = useQuery({
+    queryKey: ["dispatchable-workers", orgId, activeBranchId],
+    enabled: Boolean(orgId),
+    queryFn: async () => {
+      if (!orgId) return [];
+      const { workers, error: fetchError } = await getDispatchableWorkers(orgId, activeBranchId);
+      if (fetchError) throw new Error(fetchError);
+      return workers.map((worker) => ({
+        value: worker.id,
+        label: worker.full_name,
+        role: worker.role,
+      }));
+    },
+  });
+
+  useEffect(() => {
+    if (!selectedWorker && technicians.length > 0) {
+      setSelectedWorker(technicians[0].value);
     }
-  }, [orgId, selectedDate, selectedWorker]);
+    if (selectedWorker && technicians.length > 0 && !technicians.some((t) => t.value === selectedWorker)) {
+      setSelectedWorker(technicians[0].value);
+    }
+    if (technicians.length === 0) {
+      setSelectedWorker(null);
+    }
+  }, [technicians, selectedWorker]);
 
-  useEffect(() => { loadWorkers(); }, [loadWorkers]);
+  const {
+    data: blocks = [],
+    isLoading: loadingBlocks,
+    refetch: refetchBlocks,
+  } = useQuery({
+    queryKey: ["optimizable-blocks", orgId, selectedWorker, selectedDate],
+    enabled: Boolean(orgId && selectedWorker),
+    queryFn: async () => {
+      if (!orgId || !selectedWorker) return [];
+      const { blocks: fetched, error: fetchError } = await getOptimizableBlocks(selectedWorker, selectedDate, orgId);
+      if (fetchError) throw new Error(fetchError);
+      return fetched;
+    },
+  });
 
-  // Load blocks when worker changes
-  const loadBlocks = useCallback(async () => {
-    if (!orgId || !selectedWorker) return;
-    const { blocks: b } = await getOptimizableBlocks(selectedWorker, selectedDate, orgId);
-    setBlocks(b);
+  useEffect(() => {
     setProposedResult(null);
     setCommitted(false);
     setError(null);
-  }, [orgId, selectedWorker, selectedDate]);
+  }, [selectedWorker, selectedDate, activeBranchId]);
 
-  useEffect(() => { loadBlocks(); }, [loadBlocks]);
+  const previewStops = useMemo<RoutingStop[]>(
+    () =>
+      blocks
+        .filter((block) => block.lat != null && block.lng != null)
+        .map((block) => ({
+          id: block.id,
+          title: block.title,
+          lat: block.lat as number,
+          lng: block.lng as number,
+          durationSeconds: block.duration_seconds || 0,
+          isTimePinned: block.is_time_pinned,
+          isSupplierWaypoint: block.is_supplier_waypoint,
+          startTime: block.start_time,
+          endTime: block.end_time,
+        })),
+    [blocks],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function buildPreview() {
+      if (proposedResult || previewStops.length < 2 || !MAPBOX_ACCESS_TOKEN) {
+        setPreviewRoute(null);
+        return;
+      }
+      try {
+        const optimized = await calculateOptimalRoute(previewStops, {
+          token: MAPBOX_ACCESS_TOKEN,
+          respectPinned: true,
+        });
+        if (!cancelled) setPreviewRoute(optimized);
+      } catch {
+        if (!cancelled) setPreviewRoute(null);
+      }
+    }
+    void buildPreview();
+    return () => {
+      cancelled = true;
+    };
+  }, [previewStops, proposedResult]);
 
   // Initialize map
   useEffect(() => {
@@ -198,9 +260,29 @@ export default function RouteOptimizerPage() {
             });
           }
         } catch { /* polyline decode failed */ }
+      } else if (previewRoute?.tripGeometryGeoJson) {
+        try {
+          map.addSource("route-line", {
+            type: "geojson",
+            data: previewRoute.tripGeometryGeoJson,
+          });
+          map.addLayer({
+            id: "route-line-layer",
+            type: "line",
+            source: "route-line",
+            layout: { "line-join": "round", "line-cap": "round" },
+            paint: {
+              "line-color": "#10B981",
+              "line-width": 3,
+              "line-opacity": 0.75,
+            },
+          });
+        } catch {
+          // noop
+        }
       }
     });
-  }, [blocks, proposedResult]);
+  }, [blocks, proposedResult, previewRoute]);
 
   // Optimize handler
   const handleOptimize = async () => {
@@ -233,7 +315,8 @@ export default function RouteOptimizerPage() {
       setError(err || "Failed to commit");
     } else {
       setCommitted(true);
-      loadBlocks();
+      await refetchBlocks();
+      void queryClient.invalidateQueries({ queryKey: ["optimizable-blocks", orgId, selectedWorker, selectedDate] });
     }
     setCommitting(false);
   };
@@ -241,7 +324,8 @@ export default function RouteOptimizerPage() {
   // Pin toggle
   const handleTogglePin = async (blockId: string, currentlyPinned: boolean) => {
     await togglePinBlock(blockId, !currentlyPinned);
-    loadBlocks();
+    await refetchBlocks();
+    void queryClient.invalidateQueries({ queryKey: ["optimizable-blocks", orgId, selectedWorker, selectedDate] });
   };
 
   // Date navigation
@@ -304,12 +388,20 @@ export default function RouteOptimizerPage() {
             <select
               value={selectedWorker || ""}
               onChange={(e) => { setSelectedWorker(e.target.value || null); setProposedResult(null); }}
+              disabled={loadingTechnicians}
               className="w-full rounded-lg border border-white/[0.06] bg-zinc-900/50 px-3 py-2 text-[12px] text-zinc-200 outline-none focus:border-emerald-500/40"
             >
-              <option value="">Select {t("technician")}...</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.full_name} — {w.block_count} {t("jobs")} {w.has_coordinates ? "📍" : "⚠️"}
+              {loadingTechnicians ? (
+                <option value="">Loading {t("technician")}s...</option>
+              ) : (
+                <option value="">Select {t("technician")}...</option>
+              )}
+              {!loadingTechnicians && technicians.length === 0 ? (
+                <option value="" disabled>No {t("technician")}s found in this branch.</option>
+              ) : null}
+              {technicians.map((tech) => (
+                <option key={tech.value} value={tech.value}>
+                  {tech.label} — {tech.role}
                 </option>
               ))}
             </select>
@@ -406,7 +498,7 @@ export default function RouteOptimizerPage() {
 
         {/* Timeline */}
         <div className="flex-1 overflow-y-auto p-3">
-          {loading ? (
+          {loadingTechnicians || loadingBlocks ? (
             <div className="flex h-40 items-center justify-center">
               <Loader2 size={20} className="animate-spin text-zinc-600" />
             </div>

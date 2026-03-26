@@ -1,9 +1,9 @@
 # Inbox Module — Comprehensive Audit Report (Post-PRD)
 
-> **Generated**: 2026-03-14T14:54:58.040Z
+> **Generated**: 2026-03-26T05:33:08.820Z
 > **Module**: Inbox (`/dashboard/inbox`)
 > **Test Framework**: Playwright (18 test suites)
-> **Total Findings**: 12
+> **Total Findings**: 0
 > **PRD**: Inbox Module Live Activation & Fixes (P0)
 
 ---
@@ -12,46 +12,26 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical Failures | 5 |
-| 🟡 Visual Defects | 1 |
+| 🔴 Critical Failures | 0 |
+| 🟡 Visual Defects | 0 |
 | 🟣 Dummy Data Leaks | 0 |
-| 🟠 Warnings | 3 |
-| 🟢 Flow Passes | 3 |
+| 🟠 Warnings | 0 |
+| 🟢 Flow Passes | 0 |
 
 ---
 
 ## 🔴 Critical Failures
 
+_No critical failures found._
 
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-
-### Console error
-- **Area**: Console
-- **Detail**: Failed to load resource: the server responded with a status of 404 (Not Found)
-
-### HTTP 500
-- **Area**: Network
-- **Detail**: URL: http://127.0.0.1:54321/functions/v1/ingest-telemetry
-
-### Filter button not found
-- **Area**: Filter
-- **Detail**: Could not locate the filter button in the inbox header.
-
-### No empty state shown
-- **Area**: EmptyState
-- **Detail**: Inbox has 0 items but no empty state message is visible — blank screen.
 
 
 ---
 
 ## 🟡 Visual Defects
 
+_No visual defects found._
 
-### Mobile preview pane state unclear
-- **Area**: Responsive
-- **Detail**: Could not verify if right pane is properly hidden on mobile.
 
 
 ---
@@ -66,27 +46,15 @@ _No dummy data leaks found._
 
 ## 🟠 Warnings
 
+_No warnings._
 
-### No items for job ref test
-- **Area**: JobRef
-- **Detail**: Skipping.
-
-### HTTP 404
-- **Area**: Network
-- **Detail**: URL: http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
-
-### Snooze not visible (empty inbox)
-- **Area**: Snooze
-- **Detail**: Snooze is not visible — preview pane shows empty state instead. Acceptable for MVP.
 
 
 ---
 
 ## 🟢 Flow Verification (Passes)
 
-- ✅ **[UI]** Keyboard hints render: Found 6 kbd elements for J, K, E, H hints.
-- ✅ **[Style]** All buttons have pointer cursor: Checked 15 buttons.
-- ✅ **[Style]** Inter font applied: Font: inter, "inter Fallback"
+
 
 ---
 

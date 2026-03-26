@@ -36,6 +36,8 @@ import { createClient } from "@/lib/supabase/client";
 import { LottieIcon } from "@/components/dashboard/lottie-icon";
 import { radarScanAnimation } from "@/components/dashboard/lottie-data-relay";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -71,6 +73,7 @@ interface ConversationTileProps {
   channel: Channel;
   active: boolean;
   unread: boolean;
+  href: string;
   onClick: () => void;
   lastMessage?: string;
 }
@@ -79,6 +82,7 @@ function ConversationTile({
   channel,
   active,
   unread,
+  href,
   onClick,
   lastMessage,
 }: ConversationTileProps) {
@@ -88,7 +92,8 @@ function ConversationTile({
   const isDM = channel.type === "dm";
 
   return (
-    <button
+    <Link
+      href={href}
       onClick={onClick}
       className={`group relative flex w-full items-center gap-3 rounded-[var(--radius-nav-item)] px-3 py-2.5 text-left transition-all duration-150 ${
         active
@@ -155,7 +160,7 @@ function ConversationTile({
           </p>
         )}
       </div>
-    </button>
+    </Link>
   );
 }
 
@@ -306,6 +311,7 @@ function InboxList({
               channel={channel}
               active={activeChannelId === channel.id}
               unread={unreadChannels.has(channel.id)}
+              href={`/dashboard/messages/${channel.id}`}
               onClick={() => onSelectChannel(channel)}
               lastMessage={lastMessages[channel.id]}
             />
@@ -386,8 +392,9 @@ function EmptyStateRadar() {
    MessagesPage — Master Split-Pane Orchestrator
    ═══════════════════════════════════════════════════════════════ */
 
-export default function MessagesPage() {
-  const { t, isCare } = useIndustryLexicon();
+export function MessagesView({ routeChannelId = null }: { routeChannelId?: string | null }) {
+  useIndustryLexicon();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const currentOrg = useAuthStore((s) => s.currentOrg);
@@ -409,19 +416,46 @@ export default function MessagesPage() {
     if (orgId) loadChannels(orgId);
   }, [orgId, loadChannels]);
 
-  /* ── Realtime: new messages ──────────────────────────── */
-  const channelIdsRef = useRef<string[]>([]);
   useEffect(() => {
-    channelIdsRef.current = channels.map((c) => c.id);
-  }, [channels]);
+    if (routeChannelId) {
+      setActiveChannel(routeChannelId);
+      return;
+    }
+    setActiveChannel(null);
+  }, [routeChannelId, setActiveChannel]);
+
+  const handleRealtimeInsert = useCallback(
+    (row: { id?: string; sender_id?: string; channel_id?: string }) => {
+      if (!row?.id || !row.channel_id) return;
+      if (row.sender_id && row.sender_id === userId) return;
+
+      const supabase = createClient();
+      void supabase
+        .from("messages")
+        .select("*, profiles:sender_id(id, full_name, avatar_url)")
+        .eq("id", row.id)
+        .single()
+        .then(({ data }) => {
+          if (!data) return;
+          useMessengerStore.getState().addRealtimeMessage(data as Message);
+          if (row.channel_id !== activeChannelId) {
+            setUnreadChannels((prev) => {
+              if (prev.has(row.channel_id!)) return prev;
+              const next = new Set(prev);
+              next.add(row.channel_id!);
+              return next;
+            });
+          }
+        });
+    },
+    [userId, activeChannelId]
+  );
 
   useEffect(() => {
-    if (!userId || channels.length === 0) return;
-
+    if (!userId) return;
     const supabase = createClient();
-
-    const subscription = supabase
-      .channel(`messages-page:${userId}`)
+    const channel = supabase
+      .channel(`messages:all:${userId}`)
       .on(
         "postgres_changes",
         {
@@ -430,75 +464,28 @@ export default function MessagesPage() {
           table: "messages",
         },
         (payload) => {
-          try {
-            const newMsg = payload?.new as Record<string, unknown> | undefined;
-            if (
-              !newMsg ||
-              typeof newMsg.channel_id !== "string" ||
-              typeof newMsg.sender_id !== "string" ||
-              typeof newMsg.id !== "string"
-            )
-              return;
-            if (
-              !channelIdsRef.current.includes(newMsg.channel_id) ||
-              newMsg.sender_id === userId
-            )
-              return;
-
-            void supabase
-              .from("messages")
-              .select("*, profiles:sender_id(id, full_name, avatar_url)")
-              .eq("id", newMsg.id)
-              .single()
-              .then(({ data }) => {
-                if (data) {
-                  const msg = data as Message;
-                  useMessengerStore.getState().addRealtimeMessage(msg);
-
-                  // Mark channel as unread if not the active one
-                  const currentActive =
-                    useMessengerStore.getState().activeChannelId;
-                  if (msg.channel_id !== currentActive) {
-                    setUnreadChannels((prev) => {
-                      const next = new Set(prev);
-                      next.add(msg.channel_id);
-                      return next;
-                    });
-                  }
-                }
-              });
-          } catch {
-            // ignore malformed payloads
-          }
-        },
+          handleRealtimeInsert(payload.new as { id?: string; sender_id?: string; channel_id?: string });
+        }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, channels.length]);
+  }, [userId, handleRealtimeInsert]);
 
-  /* ── Keyboard: ⌘N new message ────────────────────────── */
+  /* ── Global event bridge: Cmd/Ctrl+N from dashboard layout ── */
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
-        // Don't fire if inside inputs
-        const tag = (e.target as HTMLElement).tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA") return;
-        e.preventDefault();
-        setNewMessageOpen(true);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const handleOpenComposer = () => setNewMessageOpen(true);
+    window.addEventListener("messenger:new-message", handleOpenComposer);
+    return () => window.removeEventListener("messenger:new-message", handleOpenComposer);
   }, []);
 
   /* ── Channel selection ───────────────────────────────── */
   const handleSelectChannel = useCallback(
     (channel: Channel) => {
       setActiveChannel(channel.id);
+      router.push(`/dashboard/messages/${channel.id}`);
       // Clear unread state for this channel
       setUnreadChannels((prev) => {
         if (!prev.has(channel.id)) return prev;
@@ -507,7 +494,7 @@ export default function MessagesPage() {
         return next;
       });
     },
-    [setActiveChannel],
+    [setActiveChannel, router],
   );
 
   /* ── Last message snippets for tiles ─────────────────── */
@@ -608,4 +595,8 @@ export default function MessagesPage() {
       />
     </>
   );
+}
+
+export default function MessagesPage() {
+  return <MessagesView routeChannelId={null} />;
 }

@@ -46,19 +46,6 @@ class SupabaseService {
   static String get supabaseAnonKey =>
       _envAnonKey.isNotEmpty ? _envAnonKey : _prodAnonKey;
 
-  // ── Aegis-Citadel: SSL Certificate Pinning ──────────────────────────
-  // SHA-256 fingerprint of the Supabase API TLS certificate.
-  // To extract: openssl s_client -connect olqjuadvseoxpfjzlghb.supabase.co:443 < /dev/null 2>/dev/null | openssl x509 -fingerprint -sha256 -noout
-  // When the certificate rotates, update this value and push an app update.
-  //
-  // NOTE: In debug mode, pinning is disabled to allow local development
-  // with self-signed certs or proxy tools like Charles/mitmproxy.
-  static const List<String> _pinnedCertHashes = [
-    // Primary cert (update when Supabase rotates their TLS cert)
-    // TODO: Replace with actual SHA-256 hash before production release
-    'PLACEHOLDER_SHA256_CERT_HASH',
-  ];
-
   static WidgetDeepLinkHandler? onWidgetDeepLink;
   static String? pendingWidgetDeepLink;
 

@@ -26,6 +26,16 @@ DECLARE
   v_start timestamptz;
   v_end timestamptz;
 BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1
+    FROM public.organization_members om
+    WHERE om.organization_id = p_org_id
+      AND om.user_id = auth.uid()
+      AND om.status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'Access Denied: Cross-Tenant Violation';
+  END IF;
+
   v_start := p_date::timestamptz;
   v_end := (p_date + 1)::timestamptz;
 
@@ -133,7 +143,24 @@ DO $$ BEGIN
       AS $body$
       DECLARE
         v_result json;
+        v_target_org_id uuid;
       BEGIN
+        SELECT c.organization_id
+        INTO v_target_org_id
+        FROM public.clients c
+        WHERE c.id = p_client_id
+          AND c.deleted_at IS NULL;
+
+        IF v_target_org_id IS NULL OR auth.uid() IS NULL OR NOT EXISTS (
+          SELECT 1
+          FROM public.organization_members om
+          WHERE om.organization_id = v_target_org_id
+            AND om.user_id = auth.uid()
+            AND om.status = 'active'
+        ) THEN
+          RAISE EXCEPTION 'Access Denied: Cross-Tenant Violation';
+        END IF;
+
         SELECT row_to_json(t)
         INTO v_result
         FROM (
@@ -254,6 +281,16 @@ DECLARE
   v_insights json;
   v_team json;
 BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1
+    FROM public.organization_members om
+    WHERE om.organization_id = p_org_id
+      AND om.user_id = auth.uid()
+      AND om.status = 'active'
+  ) THEN
+    RAISE EXCEPTION 'Access Denied: Cross-Tenant Violation';
+  END IF;
+
   -- Reuse existing RPCs for each section
   SELECT public.get_dashboard_stats(p_org_id) INTO v_stats;
   SELECT public.get_my_schedule(auth.uid(), 5) INTO v_schedule;
@@ -279,6 +316,10 @@ AS $$
 DECLARE
   v_user_id uuid := auth.uid();
 BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Access Denied: Anonymous User';
+  END IF;
+
   INSERT INTO public.dashboard_layouts (user_id, layout, updated_at)
   VALUES (v_user_id, p_layout, now())
   ON CONFLICT (user_id)
@@ -298,6 +339,10 @@ AS $$
 DECLARE
   v_layout jsonb;
 BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Access Denied: Anonymous User';
+  END IF;
+
   SELECT layout INTO v_layout
   FROM public.dashboard_layouts
   WHERE user_id = auth.uid();

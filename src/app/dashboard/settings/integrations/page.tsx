@@ -58,6 +58,7 @@ import {
   type ConnectionHealth,
 } from "@/app/actions/ledger-bridge";
 import { useOrg } from "@/lib/hooks/use-org";
+import { useSectorFeatures } from "@/lib/hooks/use-sector-features";
 import { useToastStore } from "@/components/app/action-toast";
 
 const NDIS_CATEGORIES = [
@@ -645,6 +646,7 @@ function IntegrationCard({
   onMapClick,
   onPayrollMap,
   onRevenueMap,
+  showNDISMapping = true,
 }: {
   status: IntegrationStatus;
   health: ConnectionHealth | null;
@@ -654,6 +656,7 @@ function IntegrationCard({
   onMapClick: (p: AccountingProvider) => void;
   onPayrollMap: () => void;
   onRevenueMap: () => void;
+  showNDISMapping?: boolean;
 }) {
   const [disconnecting, startDisconnect] = useTransition();
 
@@ -781,13 +784,15 @@ function IntegrationCard({
       <div className="flex flex-wrap items-center gap-2 mt-auto">
         {status.is_connected ? (
           <>
-            <button
-              onClick={() => onMapClick(status.provider)}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-black text-xs font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
-            >
-              <Settings size={12} />
-              NDIS / Pay Mapping
-            </button>
+            {showNDISMapping && (
+              <button
+                onClick={() => onMapClick(status.provider)}
+                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white text-black text-xs font-semibold rounded-lg hover:bg-zinc-200 transition-colors"
+              >
+                <Settings size={12} />
+                NDIS / Pay Mapping
+              </button>
+            )}
             <button
               onClick={onRevenueMap}
               className="flex items-center justify-center gap-1.5 px-3 py-2 border border-white/10 text-white text-xs font-medium rounded-lg hover:bg-white/5 transition-colors"
@@ -1090,6 +1095,7 @@ function EntityMapViewer({ orgId }: { orgId: string }) {
 // ── Main Page ─────────────────────────────────────────────
 export default function IntegrationsPage() {
   const { orgId } = useOrg();
+  const { showNDIS } = useSectorFeatures();
   const { addToast } = useToastStore();
   const [statuses, setStatuses] = useState<IntegrationStatus[]>([]);
   const [health, setHealth] = useState<ConnectionHealth | null>(null);
@@ -1224,7 +1230,7 @@ export default function IntegrationsPage() {
                 </p>
               </div>
 
-              {statuses.some((s) => s.failed_count > 0) && (
+              {statuses?.some((s) => s.failed_count > 0) && (
                 <div className="mb-6 flex items-center gap-3 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
                   <AlertTriangle
                     size={16}
@@ -1232,7 +1238,7 @@ export default function IntegrationsPage() {
                   />
                   <div className="flex-1">
                     <p className="text-xs text-rose-300 font-medium">
-                      {statuses.reduce((t, s) => t + s.failed_count, 0)} sync
+                      {statuses?.reduce((t, s) => t + (s.failed_count ?? 0), 0) ?? 0} sync
                       failures detected.
                     </p>
                     <p className="text-[10px] text-rose-400/70">
@@ -1253,7 +1259,7 @@ export default function IntegrationsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {statuses.map((s) => (
+                  {statuses?.map((s) => (
                     <IntegrationCard
                       key={s.provider}
                       status={s}
@@ -1266,6 +1272,7 @@ export default function IntegrationsPage() {
                       onMapClick={handleMapClick}
                       onPayrollMap={() => setShowPayrollMap(true)}
                       onRevenueMap={handleRevenueMap}
+                      showNDISMapping={showNDIS}
                     />
                   ))}
                 </div>

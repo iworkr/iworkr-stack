@@ -1,8 +1,8 @@
 # Automations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-14T15:05:08.537Z
+> **Generated**: 2026-03-25T15:49:18.571Z
 > **Module**: Automations (`/dashboard/automations` & `/dashboard/automations/[id]`)
-> **Total Findings**: 11
+> **Total Findings**: 0
 > **Test Suites**: 16
 
 ---
@@ -11,11 +11,11 @@
 
 | Category | Count |
 |----------|-------|
-| 🔴 Critical | 1 |
+| 🔴 Critical | 0 |
 | 🟡 Visual | 0 |
 | 🟣 Dummy Data | 0 |
-| 🟠 Warnings | 3 |
-| 🟢 Passes | 7 |
+| 🟠 Warnings | 0 |
+| 🟢 Passes | 0 |
 
 ---
 
@@ -55,9 +55,7 @@
 
 ## 🔴 Critical Failures
 
-### HTTP 500
-- **Area**: Network
-- **Detail**: http://127.0.0.1:54321/functions/v1/ingest-telemetry
+_None._
 
 ---
 
@@ -75,32 +73,11 @@ _None._
 
 ## 🟠 Warnings
 
-### Console error
-- Failed to load resource: the server responded with a status of 500 (Internal Server Error)
-
-### Console error
-- Failed to load resource: the server responded with a status of 404 (Not Found)
-
-### HTTP 404
-- http://127.0.0.1:54321/rest/v1/org_members?select=profile_id%2Cprofiles%28id%2Cfull_name%2Cavatar_url%29&organization_id=eq.721629d5-0459-4d4a-b323-ad76d3ba58c2
+_None._
 
 ---
 
 ## 🟢 Passes
-
-- ✅ [Store] automations-store.ts: No mock imports
-
-- ✅ [Store] Store initializes with empty []
-
-- ✅ [Store] loadFromServer: No fallback to initialFlows
-
-- ✅ [Store] createFlowServer action added
-
-- ✅ [Store] testFlowServer action added
-
-- ✅ [Style] All buttons have cursor:pointer
-
-- ✅ [Network] No 406 errors
 
 
 ---

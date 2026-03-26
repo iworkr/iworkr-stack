@@ -49,13 +49,17 @@ function mapNotification(n: any): InboxItem {
           hour12: true,
         })
       : "",
-    read: n.read || false,
+    read: Boolean(n.read ?? n.is_read ?? false),
     jobRef: n.related_job_id || undefined,
     sender: n.sender_name || "System",
     senderInitials: getInitials(n.sender_name || "System"),
     context: n.context || undefined,
     snoozedUntil: n.snoozed_until || null,
     archived: n.archived || false,
+    actionUrl: n.action_url || null,
+    referenceId: n.reference_id || n.related_entity_id || n.related_job_id || null,
+    relatedEntityType: n.related_entity_type || null,
+    relatedEntityId: n.related_entity_id || null,
   };
 }
 
@@ -183,7 +187,8 @@ export const useInboxStore = create<InboxStore>()(
   addRealtimeItem: (payload: any) => {
     const newItem = mapNotification(payload.new);
     set((s) => ({
-      items: [newItem, ...s.items],
+      // Guard against duplicate websocket deliveries from overlapping listeners/reconnects.
+      items: s.items.some((i) => i.id === newItem.id) ? s.items : [newItem, ...s.items],
     }));
   },
 

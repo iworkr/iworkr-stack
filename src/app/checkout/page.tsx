@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import {
   loadStripe,
   type StripeElementsOptions,
+  type StripeError,
 } from "@stripe/stripe-js";
 import {
   Elements,
@@ -34,9 +35,55 @@ import { useAuthStore } from "@/lib/auth-store";
 import { useBillingStore } from "@/lib/billing-store";
 import { getPlanByKey, type PlanDefinition } from "@/lib/plans";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey
+  ? loadStripe(stripePublishableKey)
+  : null;
+
+type CheckoutErrorState = {
+  message: string;
+  showSupportLink?: boolean;
+};
+
+function inferIntentTypeFromClientSecret(
+  clientSecret: string
+): "setup" | "payment" | null {
+  if (clientSecret.startsWith("seti_")) return "setup";
+  if (clientSecret.startsWith("pi_")) return "payment";
+  return null;
+}
+
+function getStripeErrorState(error: StripeError): CheckoutErrorState {
+  switch (error.code) {
+    case "card_declined":
+      return {
+        message:
+          "Your card was declined. Please check your card details or try a different card.",
+      };
+    case "expired_card":
+      return {
+        message: "Your card has expired. Please use a valid card.",
+      };
+    case "incorrect_cvc":
+      return {
+        message: "The security code is incorrect. Please check and try again.",
+      };
+    case "processing_error":
+      return {
+        message:
+          "Your card couldn't be processed right now. Please try again in a moment.",
+      };
+    case "insufficient_funds":
+      return {
+        message: "Insufficient funds. Please use a different card.",
+      };
+    default:
+      return {
+        message: error.message || "Something went wrong while processing your payment.",
+        showSupportLink: true,
+      };
+  }
+}
 
 // ── Checkout Form (inside Elements provider) ──
 function CheckoutForm({
@@ -51,7 +98,7 @@ function CheckoutForm({
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<CheckoutErrorState | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,7 +126,7 @@ function CheckoutForm({
     }
 
     if (result.error) {
-      setError(result.error.message || "Something went wrong.");
+      setError(getStripeErrorState(result.error));
       setProcessing(false);
     } else {
       onSuccess();
@@ -108,7 +155,15 @@ function CheckoutForm({
           animate={{ opacity: 1, y: 0 }}
           className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-[13px] text-rose-400"
         >
-          {error}
+          <p>{error.message}</p>
+          {error.showSupportLink && (
+            <Link
+              href="mailto:support@iworkr.com"
+              className="mt-1 inline-flex text-[12px] text-rose-300 underline underline-offset-2 hover:text-rose-200"
+            >
+              Need help? Contact support
+            </Link>
+          )}
         </motion.div>
       )}
 
@@ -203,7 +258,7 @@ function CheckoutInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, currentOrg } = useAuthStore();
-  const { refreshBilling } = useBillingStore();
+  const { refreshBilling, subscription, loadBilling } = useBillingStore();
 
   const planKey = searchParams.get("plan") || "pro";
   const interval = searchParams.get("interval") || "monthly";
@@ -219,9 +274,17 @@ function CheckoutInner() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [success, setSuccess] = useState(isSuccess);
   const initRef = useRef(false);
+  const orgSubscription =
+    subscription?.organization_id === currentOrg?.id ? subscription : null;
+  const hasExistingSubscription =
+    orgSubscription?.status === "active" ||
+    orgSubscription?.status === "trialing";
+  const existingPlan = orgSubscription?.plan_key
+    ? getPlanByKey(orgSubscription.plan_key).name
+    : "your current plan";
 
   async function createSubscription() {
-    if (!currentOrg?.id || !priceId) return;
+    if (!currentOrg?.id || !priceId || hasExistingSubscription) return;
 
     try {
       const res = await fetch("/api/stripe/create-subscription", {
@@ -233,28 +296,60 @@ function CheckoutInner() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 409 && data?.code === "already_subscribed") {
+          setLoadError(
+            "You're already subscribed to an active plan. Manage your subscription in Settings."
+          );
+          return;
+        }
         setLoadError(data.error || "Failed to initialize checkout");
         return;
       }
 
+      if (typeof data?.clientSecret !== "string" || data.clientSecret.length < 10) {
+        setLoadError("Checkout session was invalid. Please try again.");
+        return;
+      }
+
+      const inferredType = inferIntentTypeFromClientSecret(data.clientSecret);
+      const apiType = data?.type === "setup" || data?.type === "payment" ? data.type : null;
+      const resolvedType = inferredType || apiType;
+
+      if (!resolvedType) {
+        setLoadError("Unable to determine payment flow. Please retry checkout.");
+        return;
+      }
+
       setClientSecret(data.clientSecret);
-      setIntentType(data.type);
+      setIntentType(resolvedType);
     } catch {
       setLoadError("Network error. Please try again.");
     }
   }
 
   useEffect(() => {
+    if (currentOrg?.id) {
+      loadBilling(currentOrg.id);
+    }
+  }, [currentOrg?.id, loadBilling]);
+
+  useEffect(() => {
+    if (!stripePromise) {
+      setLoadError(
+        "Stripe publishable key is missing. Please configure NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY."
+      );
+      return;
+    }
     if (!user) {
       router.push(`/auth?next=/checkout?plan=${planKey}&interval=${interval}`);
       return;
     }
-    if (!isSuccess && currentOrg?.id && priceId && !initRef.current) {
+    if (!isSuccess && currentOrg?.id && priceId && !initRef.current && !hasExistingSubscription) {
       initRef.current = true;
       createSubscription();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, currentOrg?.id, priceId, isSuccess]);
+  }, [user, currentOrg?.id, priceId, isSuccess, hasExistingSubscription]);
 
   if (success) {
     return <CheckoutSuccess planName={plan.name} />;
@@ -450,6 +545,25 @@ function CheckoutInner() {
               : "Enter your payment details to subscribe."}
           </p>
 
+          {hasExistingSubscription && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+            >
+              <p className="text-[13px] text-emerald-300">
+                You&apos;re already subscribed to {existingPlan}. Manage your
+                subscription in Settings.
+              </p>
+              <Link
+                href="/settings/billing"
+                className="mt-2 inline-flex text-[12px] font-medium text-emerald-200 underline underline-offset-2 hover:text-emerald-100"
+              >
+                Go to Billing Settings
+              </Link>
+            </motion.div>
+          )}
+
           {loadError ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -459,15 +573,17 @@ function CheckoutInner() {
               <p className="text-[13px] text-rose-400">{loadError}</p>
               <button
                 onClick={() => {
+                  if (!stripePromise) return;
                   setLoadError(null);
                   createSubscription();
                 }}
+                disabled={!stripePromise}
                 className="mt-4 rounded-lg border border-white/10 px-4 py-2 text-[12px] text-zinc-300 transition-colors hover:bg-white/5"
               >
                 Try again
               </button>
             </motion.div>
-          ) : clientSecret ? (
+          ) : hasExistingSubscription ? null : clientSecret && stripePromise ? (
             <Elements stripe={stripePromise} options={elementsOptions}>
               <CheckoutForm
                 plan={plan}

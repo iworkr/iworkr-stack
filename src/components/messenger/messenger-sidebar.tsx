@@ -16,6 +16,7 @@ import {
   Search,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useMessengerStore, type Channel } from "@/lib/stores/messenger-store";
 import { useInboxStore } from "@/lib/inbox-store";
 import { useTeamStore } from "@/lib/team-store";
@@ -27,6 +28,7 @@ interface MessengerSidebarProps {
 }
 
 export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
+  const router = useRouter();
   const channels = useMessengerStore((s) => s.channels);
   const activeChannelId = useMessengerStore((s) => s.activeChannelId);
   const activeView = useMessengerStore((s) => s.activeView);
@@ -68,6 +70,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
   function handleChannelClick(channel: Channel) {
     setActiveView("chat");
     setActiveChannel(channel.id);
+    router.push(`/dashboard/messages/${channel.id}`);
   }
 
   const filterChannels = (list: Channel[]) =>
@@ -233,6 +236,7 @@ export function MessengerSidebar({ userId, orgId }: MessengerSidebarProps) {
                     if (channel) {
                       setActiveChannel(channel.id);
                       setActiveView("chat");
+                      router.push(`/dashboard/messages/${channel.id}`);
                     }
                   }}
                   icon={

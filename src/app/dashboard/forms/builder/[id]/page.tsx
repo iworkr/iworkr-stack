@@ -7,16 +7,6 @@
  */
 "use client";
 
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -25,7 +15,6 @@ import {
   Send,
   Loader2,
   FileText,
-  Plus,
   FileDown,
   X,
   Calendar,
@@ -40,45 +29,61 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useFormsStore } from "@/lib/forms-store";
-import { useOrg } from "@/lib/hooks/use-org";
-import { getForm } from "@/app/actions/forms";
-import type { FormBlock, BlockType } from "@/lib/forms-data";
+import { getFormTemplateById } from "@/app/actions/forms";
+import type { FormBlock } from "@/lib/forms-data";
 import { useToastStore } from "@/components/app/action-toast";
-import { makeBlock } from "@/components/forms/document-forge/forge-config";
-import { BlockRow } from "@/components/forms/document-forge/block-row";
-import { EmptyBlock } from "@/components/forms/document-forge/empty-block";
-
-/* ── Blueprint grid background ───────────────────────────── */
-
-function BlueprintGrid() {
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 rounded-xl"
-      style={{
-        backgroundImage: `
-          radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0)
-        `,
-        backgroundSize: "10px 10px",
-      }}
-    />
-  );
-}
+import { FormBuilder } from "@/components/forms/FormBuilder";
+import { useDebounce } from "@/lib/hooks/use-debounce";
 
 /* ── Page ───────────────────────────────────────────────── */
+
+type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "offline_local" | "error";
+
+type DraftPayload = {
+  title: string;
+  description: string;
+  category: string;
+  blocks: FormBlock[];
+};
+
+type LocalDraftSnapshot = {
+  templateId: string;
+  payload: DraftPayload;
+  savedAt: string;
+  cloudUpdatedAt?: string | null;
+};
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_REGEX.test(value);
+}
+
+function draftKey(templateId: string): string {
+  return `iworkr_form_draft_${templateId}`;
+}
+
+function serializeDraft(payload: DraftPayload): string {
+  return JSON.stringify(payload);
+}
 
 export default function FormBuilderPage() {
   const params = useParams();
   const router = useRouter();
-  const { orgId } = useOrg();
-  const { updateFormServer, createFormServer, publishFormServer } = useFormsStore();
+  const { updateFormTemplateDraftServer, publishFormTemplateServer } = useFormsStore();
   const { addToast } = useToastStore();
+  const paramsId = Array.isArray(params.id) ? params.id[0] : (params.id as string);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("custom");
   const [blocks, setBlocks] = useState<FormBlock[]>([]);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [cloudUpdatedAt, setCloudUpdatedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [formId, setFormId] = useState<string | null>(null);
@@ -86,90 +91,214 @@ export default function FormBuilderPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [exportPdfLoading, setExportPdfLoading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [restoreSnapshot, setRestoreSnapshot] = useState<LocalDraftSnapshot | null>(null);
 
-  const isNew = params.id === "new";
+  const lastCloudSnapshotRef = useRef<string>("");
+  const autosaveInFlightRef = useRef(false);
+
+  const persistedTemplateId = formId || (isUuid(paramsId) ? paramsId : null);
+
+  const currentDraftPayload = useMemo<DraftPayload>(
+    () => ({ title, description, category, blocks }),
+    [title, description, category, blocks]
+  );
+
+  const draftFingerprint = useMemo(
+    () => serializeDraft(currentDraftPayload),
+    [currentDraftPayload]
+  );
+  const debouncedDraftFingerprint = useDebounce(draftFingerprint, 1500);
 
   useEffect(() => {
-    if (isNew) {
-      setTitle("Untitled Form");
-      setLoadingForm(false);
+    if (!isUuid(paramsId)) {
+      router.replace("/dashboard/forms/builder");
       return;
     }
-    getForm(params.id as string).then(({ data }) => {
+
+    getFormTemplateById(paramsId).then(({ data, error }) => {
+      if (error) {
+        addToast(error, undefined, "error");
+        router.replace("/dashboard/forms");
+      }
       if (data) {
+        const cloudPayload: DraftPayload = {
+          title: data.title || "",
+          description: data.description || "",
+          category: data.category || "custom",
+          blocks: Array.isArray(data.schema_jsonb)
+            ? (data.schema_jsonb as unknown as FormBlock[])
+            : [],
+        };
+
         setFormId(data.id);
-        setTitle(data.title || "");
-        setDescription(data.description || "");
-        setCategory(data.category || "custom");
-        setBlocks(Array.isArray(data.blocks) ? data.blocks as unknown as FormBlock[] : []);
+        setTitle(cloudPayload.title);
+        setDescription(cloudPayload.description);
+        setCategory(cloudPayload.category);
+        setBlocks(cloudPayload.blocks);
+        setCloudUpdatedAt(data.updated_at || data.created_at || null);
+        setLastSavedAt(data.updated_at || data.created_at || null);
+        lastCloudSnapshotRef.current = serializeDraft(cloudPayload);
+        setSaveStatus("saved");
+
+        try {
+          const raw = localStorage.getItem(draftKey(data.id));
+          if (raw) {
+            const local = JSON.parse(raw) as LocalDraftSnapshot;
+            const localTs = new Date(local.savedAt).getTime();
+            const cloudTs = new Date(
+              (data.updated_at || data.created_at || 0) as string
+            ).getTime();
+            const localFingerprint = serializeDraft(local.payload);
+            const cloudFingerprint = serializeDraft(cloudPayload);
+
+            if (
+              Number.isFinite(localTs) &&
+              localTs > cloudTs &&
+              localFingerprint !== cloudFingerprint
+            ) {
+              setRestoreSnapshot(local);
+              setSaveStatus("offline_local");
+            }
+          }
+        } catch {
+          // Ignore malformed local draft cache.
+        }
       }
       setLoadingForm(false);
     });
-  }, [params.id, isNew]);
+  }, [addToast, paramsId, router]);
 
-  const handleSave = useCallback(async () => {
-    setSaving(true);
-    if (formId) {
-      await updateFormServer(formId, { title, description, category, blocks });
-    } else if (orgId) {
-      const res = await createFormServer({
-        organization_id: orgId,
-        title,
-        description,
-        category,
-        blocks,
-      });
-      if (res.data?.id) {
-        setFormId(res.data.id);
-        window.history.replaceState(null, "", `/dashboard/forms/builder/${res.data.id}`);
-      }
+  useEffect(() => {
+    if (loadingForm) return;
+    if (!lastCloudSnapshotRef.current) return;
+    if (saveStatus === "saving") return;
+    const isDirty = draftFingerprint !== lastCloudSnapshotRef.current;
+    setSaveStatus((prev) => {
+      if (isDirty) return "dirty";
+      if (prev === "offline_local") return prev;
+      return prev === "error" ? prev : "saved";
+    });
+  }, [draftFingerprint, loadingForm, saveStatus]);
+
+  useEffect(() => {
+    if (!persistedTemplateId) return;
+    try {
+      const snapshot: LocalDraftSnapshot = {
+        templateId: persistedTemplateId,
+        payload: currentDraftPayload,
+        savedAt: new Date().toISOString(),
+        cloudUpdatedAt,
+      };
+      localStorage.setItem(draftKey(persistedTemplateId), JSON.stringify(snapshot));
+    } catch {
+      // Ignore storage quota / privacy mode errors.
     }
-    setSaving(false);
-  }, [formId, orgId, title, description, category, blocks, updateFormServer, createFormServer]);
+  }, [persistedTemplateId, currentDraftPayload, cloudUpdatedAt]);
+
+  const handleSaveDraft = useCallback(
+    async (mode: "manual" | "auto" = "manual"): Promise<string | null> => {
+      const templateIdFromRoute = isUuid(paramsId) ? paramsId : null;
+      const targetId = formId || templateIdFromRoute;
+      if (!targetId) return null;
+
+      if (mode === "manual") {
+        setSaving(true);
+      } else {
+        autosaveInFlightRef.current = true;
+      }
+      setSaveStatus("saving");
+
+      try {
+        const updated = await updateFormTemplateDraftServer(targetId, {
+          title,
+          description,
+          category,
+          schema_jsonb: blocks,
+          status: "draft",
+        });
+        if (updated.error) {
+          throw new Error(updated.error);
+        }
+
+        const now = new Date().toISOString();
+        setLastSavedAt(now);
+        setCloudUpdatedAt(now);
+        lastCloudSnapshotRef.current = serializeDraft({ title, description, category, blocks });
+        setSaveStatus("saved");
+
+        try {
+          const snapshot: LocalDraftSnapshot = {
+            templateId: targetId,
+            payload: { title, description, category, blocks },
+            savedAt: now,
+            cloudUpdatedAt: now,
+          };
+          localStorage.setItem(draftKey(targetId), JSON.stringify(snapshot));
+        } catch {
+          // Best effort local sync.
+        }
+        return targetId;
+      } catch (error) {
+        if (mode === "manual") {
+          const message =
+            error instanceof Error ? error.message : "Failed to save draft.";
+          addToast(message, undefined, "error");
+          setSaveStatus("error");
+        } else {
+          setSaveStatus("offline_local");
+        }
+        return null;
+      } finally {
+        if (mode === "manual") {
+          setSaving(false);
+        } else {
+          autosaveInFlightRef.current = false;
+        }
+      }
+    },
+    [
+      addToast,
+      blocks,
+      category,
+      description,
+      formId,
+      paramsId,
+      title,
+      updateFormTemplateDraftServer,
+    ]
+  );
+
+  useEffect(() => {
+    if (loadingForm) return;
+    if (!persistedTemplateId) return;
+    if (saving || publishing || autosaveInFlightRef.current) return;
+    if (debouncedDraftFingerprint === lastCloudSnapshotRef.current) return;
+    void handleSaveDraft("auto");
+  }, [
+    debouncedDraftFingerprint,
+    handleSaveDraft,
+    loadingForm,
+    persistedTemplateId,
+    publishing,
+    saving,
+  ]);
 
   const handlePublish = async () => {
-    if (!formId) await handleSave();
-    if (!formId && !orgId) return;
+    const targetId = await handleSaveDraft("manual");
+    if (!targetId) return;
+    if (blocks.length === 0) {
+      addToast("Add at least one field before publishing.", undefined, "error");
+      return;
+    }
     setPublishing(true);
-    const id = formId || "";
-    if (id) await publishFormServer(id);
+    const published = await publishFormTemplateServer(targetId);
+    if (published.error) {
+      addToast(published.error, undefined, "error");
+      setPublishing(false);
+      return;
+    }
     setPublishing(false);
     router.push("/dashboard/forms");
-  };
-
-  const addBlock = useCallback((type: BlockType, index?: number) => {
-    const next = makeBlock(type);
-    setBlocks((prev) => {
-      if (index !== undefined) {
-        const copy = [...prev];
-        copy.splice(index + 1, 0, next);
-        return copy;
-      }
-      return [...prev, next];
-    });
-    setSelectedId(next.id);
-  }, []);
-
-  const removeBlock = (id: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
-    if (selectedId === id) setSelectedId(null);
-  };
-
-  const updateBlock = (id: string, patch: Partial<FormBlock>) => {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
-  };
-
-  const duplicateBlock = (id: string) => {
-    const block = blocks.find((b) => b.id === id);
-    if (!block) return;
-    const copy = { ...block, id: `blk-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
-    const idx = blocks.findIndex((b) => b.id === id);
-    setBlocks((prev) => {
-      const p = [...prev];
-      p.splice(idx + 1, 0, copy);
-      return p;
-    });
-    setSelectedId(copy.id);
   };
 
   const handleExportPdf = useCallback(async () => {
@@ -198,22 +327,41 @@ export default function FormBuilderPage() {
     }
   }, [title, blocks]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = blocks.findIndex((b) => b.id === active.id);
-    const newIndex = blocks.findIndex((b) => b.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const next = [...blocks];
-    const [removed] = next.splice(oldIndex, 1);
-    next.splice(newIndex, 0, removed);
-    setBlocks(next);
-  };
+  const saveStatusLabel = useMemo(() => {
+    if (saveStatus === "dirty") return "Unsaved changes…";
+    if (saveStatus === "saving") return "Saving…";
+    if (saveStatus === "offline_local") return "Offline. Saved locally";
+    if (saveStatus === "error") return "Save failed";
+    if (saveStatus === "saved" && lastSavedAt) {
+      return `Saved to Cloud · ${new Date(lastSavedAt).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+    }
+    return "Idle";
+  }, [lastSavedAt, saveStatus]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const restoreLocalDraft = useCallback(() => {
+    if (!restoreSnapshot) return;
+    setTitle(restoreSnapshot.payload.title || "Untitled Form");
+    setDescription(restoreSnapshot.payload.description || "");
+    setCategory(restoreSnapshot.payload.category || "custom");
+    setBlocks(restoreSnapshot.payload.blocks || []);
+    setSaveStatus("offline_local");
+    setRestoreSnapshot(null);
+  }, [restoreSnapshot]);
+
+  const keepCloudVersion = useCallback(() => {
+    if (persistedTemplateId) {
+      try {
+        localStorage.removeItem(draftKey(persistedTemplateId));
+      } catch {
+        // Ignore storage errors.
+      }
+    }
+    setRestoreSnapshot(null);
+    setSaveStatus("saved");
+  }, [persistedTemplateId]);
 
   if (loadingForm) {
     return (
@@ -267,6 +415,9 @@ export default function FormBuilderPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <div className="hidden rounded-md border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[11px] text-zinc-500 sm:block">
+            {saveStatusLabel}
+          </div>
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
@@ -285,8 +436,8 @@ export default function FormBuilderPage() {
           </button>
           <button
             type="button"
-            onClick={handleSave}
-            disabled={saving}
+            onClick={() => void handleSaveDraft("manual")}
+            disabled={saving || publishing}
             className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-200 disabled:opacity-50"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
@@ -295,7 +446,7 @@ export default function FormBuilderPage() {
           <button
             type="button"
             onClick={handlePublish}
-            disabled={publishing || blocks.length === 0}
+            disabled={publishing}
             className="flex h-9 items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-[12px] font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-50"
           >
             {publishing ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
@@ -304,49 +455,39 @@ export default function FormBuilderPage() {
         </div>
       </div>
 
-      {/* Canvas: centered column with blueprint */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-3xl px-6 py-10">
-          <div className="relative min-h-[420px] rounded-xl border border-white/[0.04] bg-zinc-950/60 p-8">
-            <BlueprintGrid />
-
-            {/* Document header on canvas */}
-            <div className="relative mb-8 flex items-center gap-2 text-zinc-500">
-              <FileText size={18} className="shrink-0" />
-              <span className="font-display text-[15px] font-semibold text-zinc-300">
-                {title || "Untitled Form"}
-              </span>
-            </div>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
+      {restoreSnapshot && (
+        <div className="mx-6 mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+          <p className="text-[12px] text-amber-300">
+            A newer local draft was found for this form. Restore local changes or keep the cloud version.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={restoreLocalDraft}
+              className="rounded-lg bg-amber-500/20 px-3 py-1.5 text-[11px] font-medium text-amber-200 hover:bg-amber-500/30"
             >
-              <SortableContext
-                items={blocks.map((b) => b.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="relative space-y-1 pl-10">
-                  {blocks.map((block, index) => (
-                    <BlockRow
-                      key={block.id}
-                      block={block}
-                      isSelected={selectedId === block.id}
-                      onSelect={() => setSelectedId(block.id)}
-                      onUpdate={(patch) => updateBlock(block.id, patch)}
-                      onDuplicate={() => duplicateBlock(block.id)}
-                      onDelete={() => removeBlock(block.id)}
-                      onAddBelow={() => addBlock("short_text", index)}
-                      onOpenSettings={undefined}
-                    />
-                  ))}
-                  <EmptyBlock onSelectType={(type) => addBlock(type, blocks.length - 1)} />
-                </div>
-              </SortableContext>
-            </DndContext>
+              Restore Local Draft
+            </button>
+            <button
+              type="button"
+              onClick={keepCloudVersion}
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-[11px] text-zinc-400 hover:bg-white/5"
+            >
+              Keep Cloud Version
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Canvas */}
+      <div className="flex-1 overflow-y-auto">
+        <FormBuilder
+          title={title}
+          schemaElements={blocks}
+          selectedId={selectedId}
+          onSchemaChange={setBlocks}
+          onSelectedIdChange={setSelectedId}
+        />
       </div>
 
       {/* ── Form Preview Modal ────────────────────────── */}

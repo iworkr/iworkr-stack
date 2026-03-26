@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:iworkr_mobile/core/database/app_database.dart';
 import 'package:iworkr_mobile/core/database/sync_engine.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';
 import '../services/location_service.dart';
@@ -44,7 +42,6 @@ class ChronosClockScreen extends ConsumerStatefulWidget {
 class _ChronosClockScreenState extends ConsumerState<ChronosClockScreen> {
   bool _isProcessing = false;
   String? _statusMessage;
-  SpatialGateResult? _lastGateResult;
   double? _gpsAccuracy;
   final _gpsStream = GpsAccuracyStream();
 
@@ -84,8 +81,6 @@ class _ChronosClockScreenState extends ConsumerState<ChronosClockScreen> {
         jobLat: jobLat,
         jobLng: jobLng,
       );
-
-      setState(() => _lastGateResult = gateResult);
 
       if (gateResult.passed) {
         await _commitClockIn(gateResult, isSpatialViolation: false);

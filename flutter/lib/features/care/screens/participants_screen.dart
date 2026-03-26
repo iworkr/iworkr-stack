@@ -492,7 +492,12 @@ class _ParticipantTileState extends State<_ParticipantTile> {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    // TODO: Trigger call to participant/nominee
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Open participant profile to call primary contacts.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
                   },
                   child: Container(
                     width: 36,

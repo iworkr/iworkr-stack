@@ -2,8 +2,8 @@
  * @module process-transit
  * @status COMPLETE
  * @auth SECURED — Authorization header + auth.getUser() validates calling user
- * @description Project Astrolabe: GPS transit claim processor with Google Maps arbitration, NDIS variance fraud lock, and MMM zoning cap for travel billing
- * @dependencies Google Maps Distance Matrix API, Supabase
+ * @description Project Astrolabe/Orion: GPS transit claim processor with route arbitration, variance fraud lock, and MMM zoning cap for travel billing
+ * @dependencies Mapbox Directions API, Google Maps Distance Matrix API, Supabase
  * @lastAudit 2026-03-22
  */
 
@@ -20,6 +20,7 @@ const CORS = {
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const ENGINE_VERSION = "astrolabe-v1";
 const GRACE_PERIOD_SECONDS = 10 * 60;       // 10-minute grace for traffic/parking
+const DISTANCE_VARIANCE_THRESHOLD_PERCENT = 15;
 const NON_LABOR_RATE_PER_KM = 0.97;         // NDIS Schedule 2024-25 $/km
 const LABOR_RATE_PER_MINUTE = 0.7342;       // ~$44.05/hr Level 2.1 SCHADS base / 60
 
@@ -40,6 +41,7 @@ interface TransitPayload {
   end_lng: number;
   device_start_time: string;
   device_end_time: string;
+  claimed_distance_km?: number;
   route_polyline?: string;
   device_os?: string;
   app_version?: string;
@@ -48,13 +50,40 @@ interface TransitPayload {
 interface GoogleDistanceResult {
   distanceMeters: number;
   durationSeconds: number;
-  source: "google_maps" | "haversine";
+  source: "mapbox_directions" | "google_maps" | "haversine";
 }
 
 interface MmmZone {
   zone_class: string;
   zone_name: string;
   max_travel_minutes: number;
+}
+
+async function callMapboxDirections(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+): Promise<GoogleDistanceResult | null> {
+  const token = Deno.env.get("MAPBOX_ACCESS_TOKEN") ?? Deno.env.get("NEXT_PUBLIC_MAPBOX_TOKEN");
+  if (!token) return null;
+  try {
+    const url =
+      `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+      `${startLng},${startLat};${endLng},${endLat}` +
+      `?overview=full&geometries=polyline&access_token=${token}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const route = data?.routes?.[0];
+    if (!route) return null;
+    return {
+      distanceMeters: Math.round(route.distance),
+      durationSeconds: Math.round(route.duration),
+      source: "mapbox_directions",
+    };
+  } catch {
+    return null;
+  }
 }
 
 // ─── Google Maps Distance Matrix ───────────────────────────────────────────────
@@ -99,6 +128,17 @@ async function callGoogleDistanceMatrix(
   }
 
   return haversineFallback(startLat, startLng, endLat, endLng);
+}
+
+async function callBestRouteDistance(
+  startLat: number,
+  startLng: number,
+  endLat: number,
+  endLng: number,
+): Promise<GoogleDistanceResult> {
+  const mapbox = await callMapboxDirections(startLat, startLng, endLat, endLng);
+  if (mapbox) return mapbox;
+  return callGoogleDistanceMatrix(startLat, startLng, endLat, endLng);
 }
 
 // Haversine fallback — bird-flight distance at ~40 km/h average driving speed
@@ -161,6 +201,7 @@ serve(async (req: Request) => {
       origin_shift_id, destination_shift_id,
       start_lat, start_lng, end_lat, end_lng,
       device_start_time, device_end_time,
+      claimed_distance_km,
       route_polyline, device_os, app_version,
     } = body;
 
@@ -201,28 +242,39 @@ serve(async (req: Request) => {
 
     const travelLogId = logData.id as string;
 
-    // ── Step 2: Google Maps Arbitration ───────────────────────────────────────
-    const gmaps = await callGoogleDistanceMatrix(start_lat, start_lng, end_lat, end_lng);
+    // ── Step 2: Route Arbitration (Mapbox first, Google fallback, then Haversine)
+    const routing = await callBestRouteDistance(start_lat, start_lng, end_lat, end_lng);
 
     // ── Step 3: Variance Lock (Fraud Prevention) ──────────────────────────────
     const deviceStartMs = new Date(device_start_time).getTime();
     const deviceEndMs = new Date(device_end_time).getTime();
     const actualDurationSeconds = Math.round((deviceEndMs - deviceStartMs) / 1000);
-    const varianceSeconds = actualDurationSeconds - gmaps.durationSeconds;
+    const varianceSeconds = actualDurationSeconds - routing.durationSeconds;
+    const calculatedDistanceKm = Math.round((routing.distanceMeters / 1000) * 1000) / 1000;
+    const variancePercentage =
+      claimed_distance_km && calculatedDistanceKm > 0
+        ? Math.abs(((claimed_distance_km - calculatedDistanceKm) / calculatedDistanceKm) * 100)
+        : null;
 
-    let billableLaborSeconds = gmaps.durationSeconds; // default: cap at API time
+    let billableLaborSeconds = routing.durationSeconds;
     let claimStatus: string;
     let flaggedReason: string | null = null;
 
     if (varianceSeconds > GRACE_PERIOD_SECONDS) {
       // Worker took significantly longer — cap at API estimate (fraud prevention)
       claimStatus = "FLAGGED_VARIANCE";
-      flaggedReason = `Actual transit (${Math.round(actualDurationSeconds / 60)} min) exceeded API estimate (${Math.round(gmaps.durationSeconds / 60)} min) by ${Math.round(varianceSeconds / 60)} minutes. Capped at API estimate.`;
-      billableLaborSeconds = gmaps.durationSeconds;
+      flaggedReason = `Actual transit (${Math.round(actualDurationSeconds / 60)} min) exceeded API estimate (${Math.round(routing.durationSeconds / 60)} min) by ${Math.round(varianceSeconds / 60)} minutes. Capped at API estimate.`;
+      billableLaborSeconds = routing.durationSeconds;
     } else {
       // Within tolerance — use actual time (may be slightly > API due to traffic)
       claimStatus = "VERIFIED_CLEAN";
-      billableLaborSeconds = Math.min(actualDurationSeconds, gmaps.durationSeconds + GRACE_PERIOD_SECONDS);
+      billableLaborSeconds = Math.min(actualDurationSeconds, routing.durationSeconds + GRACE_PERIOD_SECONDS);
+    }
+
+    if (variancePercentage != null && variancePercentage > DISTANCE_VARIANCE_THRESHOLD_PERCENT) {
+      claimStatus = "FLAGGED_VARIANCE";
+      const distanceNote = `Claimed ${claimed_distance_km?.toFixed(2)} km vs calculated ${calculatedDistanceKm.toFixed(2)} km (${variancePercentage.toFixed(1)}% variance; threshold ${DISTANCE_VARIANCE_THRESHOLD_PERCENT}%).`;
+      flaggedReason = flaggedReason ? `${flaggedReason} ${distanceNote}` : distanceNote;
     }
 
     // ── Step 4: MMM Zoning Cap ────────────────────────────────────────────────
@@ -255,7 +307,7 @@ serve(async (req: Request) => {
     }
 
     const billableLaborMinutes = Math.ceil(billableLaborSeconds / 60);
-    const billableNonLaborKm = Math.round((gmaps.distanceMeters / 1000) * 100) / 100;
+    const billableNonLaborKm = Math.round((routing.distanceMeters / 1000) * 100) / 100;
 
     // ── Step 5: Calculate Financial Values ────────────────────────────────────
     const calculatedLaborCost = parseFloat(
@@ -307,11 +359,25 @@ serve(async (req: Request) => {
       .from("travel_claims")
       .insert({
         organization_id,
+        workspace_id: organization_id,
         travel_log_id: travelLogId,
+        start_geom: `SRID=4326;POINT(${start_lng} ${start_lat})`,
+        end_geom: `SRID=4326;POINT(${end_lng} ${end_lat})`,
         worker_id,
-        api_verified_distance_meters: gmaps.distanceMeters,
-        api_verified_duration_seconds: gmaps.durationSeconds,
-        api_source: gmaps.source,
+        api_verified_distance_meters: routing.distanceMeters,
+        api_verified_duration_seconds: routing.durationSeconds,
+        api_source: routing.source,
+        claimed_distance_km: claimed_distance_km ?? null,
+        calculated_distance_km: calculatedDistanceKm,
+        variance_percentage: variancePercentage != null ? Number(variancePercentage.toFixed(3)) : null,
+        orion_status:
+          claimStatus === "FLAGGED_VARIANCE"
+            ? "FLAGGED"
+            : claimStatus === "BILLED"
+              ? "BILLED"
+              : claimStatus === "APPROVED" || claimStatus === "OVERRIDDEN"
+                ? "APPROVED"
+                : "PENDING",
         mmm_zone: mmmZone,
         mmm_zone_cap_minutes: mmmCapMinutes,
         actual_duration_seconds: actualDurationSeconds,
@@ -354,8 +420,11 @@ serve(async (req: Request) => {
         calculated_labor_cost: calculatedLaborCost,
         calculated_non_labor_cost: calculatedNonLaborCost,
         total_claim_value: (claimData as any).total_claim_value,
-        api_distance_meters: gmaps.distanceMeters,
-        api_duration_seconds: gmaps.durationSeconds,
+        api_distance_meters: routing.distanceMeters,
+        api_duration_seconds: routing.durationSeconds,
+        claimed_distance_km: claimed_distance_km ?? null,
+        calculated_distance_km: calculatedDistanceKm,
+        variance_percentage: variancePercentage,
         variance_seconds: varianceSeconds,
         mmm_zone: mmmZone,
         flagged_reason: flaggedReason,

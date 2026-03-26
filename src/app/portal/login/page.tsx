@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -73,7 +73,7 @@ export default function PortalLoginPage() {
       } else {
         setSuccess(true);
         setTimeout(() => {
-          router.push(slug ? `/portal/c/${slug}` : "/portal");
+          router.replace(slug ? `/portal/c/${slug}` : "/portal");
         }, 1000);
       }
     } catch {

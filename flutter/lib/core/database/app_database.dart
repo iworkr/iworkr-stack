@@ -758,7 +758,7 @@ class AppDatabase extends _$AppDatabase {
 
   // ── Compliance Rules (Cerberus-Gate) ─────────────────
 
-  Future<List<LocalComplianceRuleData>> getComplianceRulesForTrigger(
+  Future<List<LocalComplianceRule>> getComplianceRulesForTrigger(
     String orgId, String triggerState,
   ) {
     return (select(localComplianceRules)

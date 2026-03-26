@@ -12,15 +12,9 @@ import {
   Activity,
   ChevronRight,
   Menu,
-  Settings,
-  LogOut,
   Check,
   ChevronDown,
   Sun,
-  User,
-  Shield,
-  CreditCard,
-  Keyboard,
   Building2,
   Plus,
   MapPin,
@@ -41,13 +35,13 @@ import { useInboxStore } from "@/lib/inbox-store";
 import { Shimmer } from "@/components/ui/shimmer";
 import { DesktopUpdateIndicator } from "@/lib/desktop/desktop-update-indicator";
 import { translateLabel, type IndustryType } from "@/lib/industry-lexicon";
-import { LetterAvatar } from "@/components/ui/letter-avatar";
 import { getBranches, type Branch } from "@/app/actions/branches";
 import { useOrg } from "@/lib/hooks/use-org";
-import { useActiveBranch, setActiveBranchId as setGlobalBranch } from "@/lib/hooks/use-active-branch";
+import { useActiveBranch } from "@/lib/hooks/use-active-branch";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { markAllRead } from "@/app/actions/notifications";
 import { useToastStore } from "@/components/shell/notification-toast";
+import { UserDropdown } from "@/components/layout/UserDropdown";
 
 /* ── Breadcrumbs ─────────────────────────────────────── */
 
@@ -329,12 +323,9 @@ function NotificationsPopover({
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const items = useInboxStore((s) => s.items);
-  const addRealtimeItem = useInboxStore((s) => s.addRealtimeItem);
-  const userId = useAuthStore((s) => s.profile?.id);
   const displayItems = items.filter((i) => !i.archived).slice(0, 5);
   const unreadCount = items.filter((i) => !i.read && !i.archived).length;
   const [markingAll, setMarkingAll] = useState(false);
-  const addToast = useToastStore((s) => s.addToast);
 
   // Outside-click handler
   useEffect(() => {
@@ -344,46 +335,6 @@ function NotificationsPopover({
     if (open) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open, onClose]);
-
-  // Realtime subscription
-  const handleNewNotification = useCallback(
-    (payload: { new: Record<string, unknown> }) => {
-      addRealtimeItem(payload);
-      // Trigger a toast for the new notification
-      const n = payload.new;
-      addToast({
-        id: (n.id as string) || crypto.randomUUID(),
-        type: (n.type as string) || "system",
-        title: (n.title as string) || "New notification",
-        body: (n.body as string) || "",
-        action_url: (n.action_url as string) || undefined,
-        created_at: (n.created_at as string) || new Date().toISOString(),
-      });
-    },
-    [addRealtimeItem, addToast],
-  );
-
-  useEffect(() => {
-    if (!userId || !isSupabaseConfigured) return;
-    const supabase = createClient();
-    const channel = supabase
-      .channel("notifications")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${userId}`,
-        },
-        handleNewNotification,
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, handleNewNotification]);
 
   const handleMarkAllRead = async () => {
     setMarkingAll(true);
@@ -467,9 +418,15 @@ function NotificationsPopover({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         onClose();
-                        router.push("/dashboard/inbox");
+                        const target = item.actionUrl || "/dashboard/inbox";
+                        // Defer navigation until popover unmount to avoid NOTIF-017 race.
+                        setTimeout(() => {
+                          router.push(target);
+                        }, 0);
                       }}
                       className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/[0.04] ${
                         isUnread ? "bg-white/[0.03]" : ""
@@ -502,14 +459,22 @@ function NotificationsPopover({
 
             {/* Footer — View all */}
             <div className="border-t border-white/[0.06] p-2">
-              <Link
-                href="/dashboard/inbox"
-                onClick={onClose}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                  // Defer routing until after popover unmount to avoid NOTIF-017 race.
+                  setTimeout(() => {
+                    router.push("/dashboard/inbox");
+                  }, 0);
+                }}
                 className="flex w-full items-center justify-center gap-1.5 rounded-md py-1.5 text-center text-[11px] text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
               >
                 View all
                 <ChevronRight size={10} />
-              </Link>
+              </button>
             </div>
           </motion.div>
         )}
@@ -660,108 +625,6 @@ function SyncRadarPopover({
   );
 }
 
-/* ── Profile Menu ────────────────────────────────────────── */
-
-function ProfileMenu({
-  open,
-  onToggle,
-  onClose,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-  const { profile, signOut } = useAuthStore();
-  const displayName = profile?.full_name || "";
-  const displayEmail = profile?.email || "";
-  const avatarUrl = profile?.avatar_url;
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    }
-    if (open) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [open, onClose]);
-
-  const items = [
-    { label: "Profile", icon: User, href: "/settings/profile" },
-    { label: "Preferences", icon: Settings, href: "/settings/preferences" },
-    { label: "Security", icon: Shield, href: "/settings/security" },
-    { label: "Billing", icon: CreditCard, href: "/settings" },
-    { label: "Keyboard Shortcuts", icon: Keyboard, href: "/settings" },
-    { divider: true },
-    { label: "Log out", icon: LogOut, href: "/" },
-  ] as const;
-
-  return (
-    <div ref={ref} className="relative">
-      <button onClick={onToggle} className="transition-all duration-150 hover:ring-2 hover:ring-white/[0.2] rounded-full">
-        {displayName ? (
-          <LetterAvatar name={displayName} src={avatarUrl} size={24} ring />
-        ) : (
-          <Shimmer className="h-6 w-6 rounded-full" />
-        )}
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -4 }}
-            transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-lg border border-white/[0.08] bg-[#161616] shadow-[0_16px_48px_-8px_rgba(0,0,0,0.6)]"
-          >
-            {/* User info */}
-            <div className="flex items-center gap-2.5 border-b border-white/[0.06] px-3 py-2.5">
-              {displayName && <LetterAvatar name={displayName} src={avatarUrl} size={28} ring />}
-              <div className="min-w-0">
-                <p className="truncate text-[12px] font-medium text-zinc-200">
-                  {displayName || <Shimmer className="h-3 w-24" />}
-                </p>
-                <p className="mt-0.5 truncate text-[10px] text-zinc-600">
-                  {displayEmail || <Shimmer className="h-2 w-32" />}
-                </p>
-              </div>
-            </div>
-
-            <div className="py-1">
-              {items.map((item, i) => {
-                if ("divider" in item) {
-                  return <div key={`div-${i}`} className="my-1 h-px bg-white/[0.06]" />;
-                }
-                const Icon = item.icon;
-                const isDanger = item.label === "Log out";
-                return (
-                  <button
-                    key={item.label}
-                    onClick={async () => {
-                      onClose();
-                      if (isDanger) { await signOut(); router.push("/"); }
-                      else { router.push(item.href); }
-                    }}
-                    className={`mx-1 flex w-[calc(100%-8px)] items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[12px] transition-colors ${
-                      isDanger
-                        ? "text-red-400 hover:bg-red-500/10"
-                        : "text-zinc-400 hover:bg-white/[0.05] hover:text-zinc-200"
-                    }`}
-                  >
-                    <Icon size={14} strokeWidth={1.5} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 /* ── Main Topbar ─────────────────────────────────────────── */
 
 export function Topbar() {
@@ -852,7 +715,7 @@ export function Topbar() {
         />
 
         {/* Profile Menu */}
-        <ProfileMenu
+        <UserDropdown
           open={profileOpen}
           onToggle={() => {
             setBranchOpen(false);

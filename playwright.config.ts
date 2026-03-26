@@ -180,6 +180,12 @@ export default defineConfig({
       dependencies: ["setup"],
     },
     {
+      name: "aegis-e2e-matrix",
+      testMatch: /aegis\/e2e-playwright-matrix\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },
+      dependencies: ["setup"],
+    },
+    {
       name: "aegis-golden-threads",
       testMatch: /aegis\/golden-thread-trade\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], storageState: AUTH_STATE },

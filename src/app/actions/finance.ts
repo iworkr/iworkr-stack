@@ -304,31 +304,6 @@ function calculateTotals(lineItems: Array<{ quantity: number; unit_price: number
 }
 
 /**
- * Generate display ID for invoice (INV-XXXX format)
- */
-async function generateDisplayId(supabase: any, orgId: string): Promise<string> {
-  const { data: maxInvoice, error: maxError } = await supabase
-    .from("invoices")
-    .select("display_id")
-    .eq("organization_id", orgId)
-    .like("display_id", "INV-%")
-    .order("display_id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  let displayId = "INV-0001";
-  if (!maxError && maxInvoice?.display_id) {
-    const match = maxInvoice.display_id.match(/INV-(\d+)/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      displayId = `INV-${String(num + 1).padStart(4, "0")}`;
-    }
-  }
-
-  return displayId;
-}
-
-/**
  * Create a new invoice with line items
  */
 export async function createInvoice(params: CreateInvoiceParams) {
@@ -346,73 +321,52 @@ export async function createInvoice(params: CreateInvoiceParams) {
       return { data: null, error: "Unauthorized" };
     }
 
-    // Generate display_id
-    const displayId = await generateDisplayId(supabase, params.organization_id);
-
-    // Calculate totals
     const taxRate = params.tax_rate ?? 10;
-    const { subtotal, tax, total } = calculateTotals(params.line_items, taxRate);
+    const rpcItems = (params.line_items || []).map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+    }));
+    const issueDate = params.issue_date || new Date().toISOString().split("T")[0];
 
-    // Create invoice
-    const invoiceData = {
-      organization_id: params.organization_id,
-      display_id: displayId,
-      client_id: params.client_id || null,
-      job_id: params.job_id || null,
-      client_name: params.client_name || null,
-      client_email: params.client_email || null,
-      client_address: params.client_address || null,
-      status: params.status || "draft",
-      issue_date: params.issue_date || null,
-      due_date: params.due_date || null,
-      subtotal,
-      tax_rate: taxRate,
-      tax,
-      total,
-      payment_link: params.payment_link || null,
-      notes: params.notes || null,
-      metadata: params.metadata || null,
-      created_by: user.id,
-    };
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "create_complete_invoice" as any,
+      {
+        p_org_id: params.organization_id,
+        p_client_id: params.client_id || null,
+        p_job_id: params.job_id || null,
+        p_client_name: params.client_name || null,
+        p_client_email: params.client_email || null,
+        p_client_address: params.client_address || null,
+        p_status: params.status || "draft",
+        p_issue_date: issueDate,
+        p_due_date: params.due_date || null,
+        p_tax_rate: taxRate,
+        p_notes: params.notes || null,
+        p_payment_link: params.payment_link || null,
+        p_items: rpcItems,
+        p_metadata: params.metadata || null,
+        p_created_by: user.id,
+      } as any
+    );
+
+    if (rpcError) {
+      return { data: null, error: rpcError.message };
+    }
+
+    const invoiceId = (rpcResult as any)?.invoice_id as string | undefined;
+    if (!invoiceId) {
+      return { data: null, error: "Invoice creation RPC returned no invoice_id" };
+    }
 
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
-      .insert(invoiceData as any)
-      .select()
+      .select("*")
+      .eq("id", invoiceId)
       .single();
-
     if (invoiceError) {
       return { data: null, error: invoiceError.message };
     }
-
-    // Create line items
-    if (params.line_items && params.line_items.length > 0) {
-      const lineItemsData = params.line_items.map((item, index) => ({
-        invoice_id: invoice.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        sort_order: index,
-      }));
-
-      const { error: lineItemsError } = await supabase
-        .from("invoice_line_items")
-        .insert(lineItemsData);
-
-      if (lineItemsError) {
-        return { data: null, error: lineItemsError.message };
-      }
-    }
-
-    // Create "created" event
-    await supabase
-      .from("invoice_events")
-      .insert({
-        invoice_id: invoice.id,
-        type: "created",
-        text: `Invoice ${displayId} was created`,
-        metadata: null,
-      });
 
     // Dispatch automation event
     dispatch(Events.invoiceCreated(invoice.organization_id, invoice.id, {

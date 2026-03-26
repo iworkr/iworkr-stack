@@ -20,6 +20,7 @@ const RBAC_ROUTES: Record<string, string[]> = {
   "/dashboard/finance": ["owner", "admin", "manager", "office_admin"],
   "/dashboard/team": ["owner", "admin", "manager"],
   "/dashboard/settings": ["owner", "admin"],
+  "/settings": ["owner", "admin"],
   "/dashboard/integrations": ["owner", "admin", "manager"],
   "/dashboard/billing": ["owner"],
   "/dashboard/dispatch": ["owner", "admin", "manager"],
@@ -68,6 +69,15 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+
+  // Legacy bridge: /settings/* => /dashboard/settings/* (non-destructive parity path)
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) {
+    const bridgeUrl = request.nextUrl.clone();
+    bridgeUrl.pathname = `/dashboard${pathname}`;
+    if (bridgeUrl.pathname !== pathname || bridgeUrl.search !== request.nextUrl.search) {
+      return NextResponse.redirect(bridgeUrl);
+    }
+  }
 
   // ─── Project Olympus: Super Admin Route Gate ───────────────────
   // Returns hard 404 (not 401) to prevent path enumeration
@@ -167,6 +177,9 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/dashboard";
     }
     url.searchParams.delete("next");
+    if (url.pathname === pathname && url.search === request.nextUrl.search) {
+      return supabaseResponse;
+    }
     return NextResponse.redirect(url);
   }
 
@@ -190,6 +203,9 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     url.searchParams.set("next", pathname);
+    if (url.pathname === pathname && url.search === request.nextUrl.search) {
+      return supabaseResponse;
+    }
     return NextResponse.redirect(url);
   }
 
@@ -221,6 +237,9 @@ export async function updateSession(request: NextRequest) {
       if (!hasPortalGrant) {
         const url = request.nextUrl.clone();
         url.pathname = "/dashboard";
+        if (url.pathname === pathname && url.search === request.nextUrl.search) {
+          return supabaseResponse;
+        }
         return NextResponse.redirect(url);
       }
     }
@@ -247,6 +266,9 @@ export async function updateSession(request: NextRequest) {
         if (!hasPortalGrant) {
           const url = request.nextUrl.clone();
           url.pathname = "/dashboard";
+          if (url.pathname === pathname && url.search === request.nextUrl.search) {
+            return supabaseResponse;
+          }
           return NextResponse.redirect(url);
         }
       }
@@ -259,6 +281,9 @@ export async function updateSession(request: NextRequest) {
     if (jwtRole && PORTAL_ROLES.includes(jwtRole)) {
       const url = request.nextUrl.clone();
       url.pathname = "/portal";
+      if (url.pathname === pathname && url.search === request.nextUrl.search) {
+        return supabaseResponse;
+      }
       return NextResponse.redirect(url);
     }
 
@@ -294,6 +319,9 @@ export async function updateSession(request: NextRequest) {
       if (hasPortalLink) {
         const url = request.nextUrl.clone();
         url.pathname = "/portal";
+        if (url.pathname === pathname && url.search === request.nextUrl.search) {
+          return supabaseResponse;
+        }
         return NextResponse.redirect(url);
       }
 
@@ -323,6 +351,9 @@ export async function updateSession(request: NextRequest) {
 
       const url = request.nextUrl.clone();
       url.pathname = "/setup";
+      if (url.pathname === pathname && url.search === request.nextUrl.search) {
+        return supabaseResponse;
+      }
       return NextResponse.redirect(url);
     }
 
@@ -333,6 +364,9 @@ export async function updateSession(request: NextRequest) {
         if (pathname.startsWith(routePrefix) && !allowedRoles.includes(role)) {
           const url = request.nextUrl.clone();
           url.pathname = "/dashboard/unauthorized";
+          if (url.pathname === pathname && url.search === request.nextUrl.search) {
+            return supabaseResponse;
+          }
           return NextResponse.redirect(url);
         }
       }

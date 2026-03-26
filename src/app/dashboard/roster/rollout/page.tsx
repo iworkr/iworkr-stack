@@ -148,7 +148,7 @@ export default function RolloutReviewPage() {
       if (result.success) {
         setCommitted(true);
         setShowConfirmModal(false);
-        setTimeout(() => { router.push("/dashboard/schedule"); }, 1800);
+        setTimeout(() => { router.replace("/dashboard/schedule"); }, 1800);
       } else {
         setError(result.error || "Commit failed");
         setShowConfirmModal(false);

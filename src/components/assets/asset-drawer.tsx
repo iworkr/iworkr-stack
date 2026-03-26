@@ -24,10 +24,11 @@ import {
   ScanBarcode,
   CheckCircle2,
   Loader2,
-  ImageIcon,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/auth-store";
 import { useAssetsStore } from "@/lib/assets-store";
+import { createClient } from "@/lib/supabase/client";
+import { useToastStore } from "@/components/app/action-toast";
 
 type Category = "vehicle" | "tool" | "equipment";
 
@@ -49,7 +50,9 @@ const categories: { id: Category; label: string; icon: typeof Truck; desc: strin
 export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: AssetDrawerProps) {
   const { currentOrg } = useAuthStore();
   const { createAssetServer } = useAssetsStore();
+  const addToast = useToastStore((s) => s.addToast);
   const orgId = currentOrg?.id;
+  const supabase = createClient();
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -63,6 +66,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
   const [model, setModel] = useState("");
   const [year, setYear] = useState("");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const [purchaseCost, setPurchaseCost] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
@@ -83,6 +87,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
     setModel("");
     setYear("");
     setPhotoPreview(null);
+    setPhotoFile(null);
     setPurchaseCost("");
     setPurchaseDate("");
     setWarrantyExpiry("");
@@ -101,6 +106,7 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => setPhotoPreview(reader.result as string);
     reader.readAsDataURL(file);
@@ -116,32 +122,81 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
   const handleSave = async () => {
     if (!orgId || !category || !name.trim()) return;
     setSaving(true);
+    try {
+      const cost = parseFloat(purchaseCost.replace(/[^0-9.]/g, ""));
+      const intervalDays = parseInt(serviceInterval) * 30;
 
-    const cost = parseFloat(purchaseCost.replace(/[^0-9.]/g, ""));
-    const intervalDays = parseInt(serviceInterval) * 30;
+      let imageUrl: string | null = null;
+      if (photoFile) {
+        try {
+          const extFromName = photoFile.name.split(".").pop()?.toLowerCase();
+          const ext = extFromName && extFromName.length > 0 ? extFromName : "jpg";
+          const path = `${orgId}/${crypto.randomUUID()}.${ext}`;
 
-    const result = await createAssetServer({
-      organization_id: orgId,
-      name: name.trim(),
-      category,
-      serial_number: serialNumber || null,
-      barcode: barcode || null,
-      make: make || null,
-      model: model || null,
-      year: year ? parseInt(year) : null,
-      purchase_cost: isNaN(cost) ? null : cost,
-      purchase_date: purchaseDate || null,
-      warranty_expiry: warrantyExpiry || null,
-      location: location || null,
-      notes: notes || null,
-      metadata: { service_interval_days: intervalDays },
-      ingestion_method: prefillSerial ? "scan" : "manual",
-    });
+          const { error: uploadError } = await supabase.storage
+            .from("assets")
+            .upload(path, photoFile, {
+              upsert: false,
+              cacheControl: "3600",
+              contentType: photoFile.type || undefined,
+            });
 
-    setSaving(false);
-    if (!result.error) {
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const publicResult = supabase.storage.from("assets").getPublicUrl(path);
+          imageUrl = publicResult?.data?.publicUrl || null;
+
+          if (!imageUrl) {
+            const { data: signedData, error: signedError } = await supabase.storage
+              .from("assets")
+              .createSignedUrl(path, 60 * 60 * 24 * 365);
+            if (signedError) throw signedError;
+            imageUrl = signedData?.signedUrl || null;
+          }
+        } catch {
+          addToast(
+            "Asset photo upload failed. Saving asset details without photo.",
+            undefined,
+            "error"
+          );
+        }
+      }
+
+      const result = await createAssetServer({
+        organization_id: orgId,
+        name: name.trim(),
+        category,
+        serial_number: serialNumber || null,
+        barcode: barcode || null,
+        make: make || null,
+        model: model || null,
+        year: year ? parseInt(year) : null,
+        purchase_cost: isNaN(cost) ? null : cost,
+        purchase_date: purchaseDate || null,
+        warranty_expiry: warrantyExpiry || null,
+        location: location || null,
+        notes: notes || null,
+        image_url: imageUrl,
+        metadata: { service_interval_days: intervalDays },
+        ingestion_method: prefillSerial ? "scan" : "manual",
+      });
+
+      if (result.error) {
+        addToast(result.error || "Failed to add asset to fleet.", undefined, "error");
+        return;
+      }
+
+      addToast("Asset added to fleet successfully.", undefined, "success");
       setSuccess(true);
       setTimeout(() => handleClose(), 1800);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save asset. Please try again.";
+      addToast(message, undefined, "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -330,7 +385,11 @@ export function AssetDrawer({ open, onClose, onScanRequest, prefillSerial }: Ass
                         <div className="relative h-32 overflow-hidden rounded-lg border border-white/[0.06]">
                           <img src={photoPreview} alt="Asset" className="h-full w-full object-cover" />
                           <button
-                            onClick={() => setPhotoPreview(null)}
+                            onClick={() => {
+                              setPhotoPreview(null);
+                              setPhotoFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
                             className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-zinc-400 backdrop-blur-sm hover:text-white"
                           >
                             <X size={12} />

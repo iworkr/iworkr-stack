@@ -113,6 +113,8 @@ class IWorkrApp extends ConsumerStatefulWidget {
 
 class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserver {
   bool _bridgeInitialized = false;
+  StreamSubscription<AuthState>? _authStateSub;
+  StreamSubscription<String>? _pendingRouteSub;
 
   @override
   void initState() {
@@ -122,6 +124,8 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
 
   @override
   void dispose() {
+    _authStateSub?.cancel();
+    _pendingRouteSub?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -138,7 +142,8 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
     // Monolith-Execution: Rehydrate active workspace from secure storage
     unawaited(_rehydrateActiveWorkspace());
 
-    SupabaseService.auth.onAuthStateChange.listen((event) {
+    _authStateSub?.cancel();
+    _authStateSub = SupabaseService.auth.onAuthStateChange.listen((event) {
       final bridge = ref.read(nativeBridgeProvider);
       if (event.event == AuthChangeEvent.signedIn) {
         bridge.syncAll();
@@ -162,7 +167,8 @@ class _IWorkrAppState extends ConsumerState<IWorkrApp> with WidgetsBindingObserv
       unawaited(FCMService.instance.checkInitialMessage());
 
       // Listen for deep-link routes dispatched by FCM payload router
-      FCMService.instance.pendingRouteStream.listen((path) {
+      _pendingRouteSub?.cancel();
+      _pendingRouteSub = FCMService.instance.pendingRouteStream.listen((path) {
         try {
           final router = ref.read(routerProvider);
           router.go(path);

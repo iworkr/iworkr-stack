@@ -31,6 +31,16 @@ as $$
 declare
   v_result json;
 begin
+  if auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = p_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   select json_agg(row_to_json(t))
   into v_result
   from (
@@ -115,6 +125,16 @@ declare
   v_client_id uuid;
   v_contact_id uuid;
 begin
+  if auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = p_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   -- Insert client
   insert into public.clients (
     organization_id, name, type, status, email, phone,
@@ -160,7 +180,24 @@ security definer
 as $$
 declare
   v_result json;
+  v_target_org_id uuid;
 begin
+  select c.organization_id
+  into v_target_org_id
+  from public.clients c
+  where c.id = p_client_id
+    and c.deleted_at is null;
+
+  if v_target_org_id is null or auth.uid() is null or not exists (
+    select 1
+    from public.organization_members om
+    where om.organization_id = v_target_org_id
+      and om.user_id = auth.uid()
+      and om.status = 'active'
+  ) then
+    raise exception 'Access Denied: Cross-Tenant Violation';
+  end if;
+
   select row_to_json(t)
   into v_result
   from (

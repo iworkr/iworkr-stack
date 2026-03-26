@@ -684,7 +684,7 @@ class _SwmsAssessmentScreenState extends ConsumerState<SwmsAssessmentScreen>
     if (_geoViolation) {
       return _buildGeoCenterCard(
         c,
-        icon: PhosphorIconsBold.mapPinX,
+        icon: PhosphorIconsBold.warningCircle,
         iconColor: _kRose,
         title: 'GEOFENCE VIOLATION',
         subtitle:
