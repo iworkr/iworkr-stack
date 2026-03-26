@@ -70,15 +70,6 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Legacy bridge: /settings/* => /dashboard/settings/* (non-destructive parity path)
-  if (pathname === "/settings" || pathname.startsWith("/settings/")) {
-    const bridgeUrl = request.nextUrl.clone();
-    bridgeUrl.pathname = `/dashboard${pathname}`;
-    if (bridgeUrl.pathname !== pathname || bridgeUrl.search !== request.nextUrl.search) {
-      return NextResponse.redirect(bridgeUrl);
-    }
-  }
-
   // ─── Project Olympus: Super Admin Route Gate ───────────────────
   // Returns hard 404 (not 401) to prevent path enumeration
   if (pathname.startsWith("/olympus")) {
