@@ -21,20 +21,26 @@ export const DEFAULT_MAP_CENTER_LATLNG = { lat: -27.4698, lng: 153.0251 };
  * Handles the race condition where style.load may have already fired.
  */
 export function applyObsidianStyle(map: mapboxgl.Map) {
+  const has = (id: string) => {
+    try { return !!map.getLayer(id); } catch { return false; }
+  };
+
+  const paint = (id: string, prop: string, value: string | number) => {
+    if (has(id)) map.setPaintProperty(id, prop, value);
+  };
+
+  const layout = (id: string, prop: string, value: string) => {
+    if (has(id)) map.setLayoutProperty(id, prop, value);
+  };
+
   const apply = () => {
-    // Background — vantablack
-    try { map.setPaintProperty("background", "background-color", "#050505"); } catch {}
+    paint("background", "background-color", "#050505");
+    paint("land", "background-color", "#09090b");
 
-    // Land — near-black
-    try { map.setPaintProperty("land", "background-color", "#09090b"); } catch {}
-
-    // Water — true black
-    const waterLayers = ["water", "water-shadow"];
-    for (const id of waterLayers) {
-      try { map.setPaintProperty(id, "fill-color", "#050505"); } catch {}
+    for (const id of ["water", "water-shadow"]) {
+      paint(id, "fill-color", "#050505");
     }
 
-    // Roads — zinc monochrome hierarchy
     const roadOverrides: Record<string, string> = {
       "road-minor": "#1a1a1e",
       "road-minor-case": "#111114",
@@ -48,14 +54,12 @@ export function applyObsidianStyle(map: mapboxgl.Map) {
       "road-motorway-trunk-case": "#3f3f46",
     };
     for (const [layer, color] of Object.entries(roadOverrides)) {
-      try { map.setPaintProperty(layer, "line-color", color); } catch {}
+      paint(layer, "line-color", color);
     }
 
-    // Buildings — barely visible
-    try { map.setPaintProperty("building", "fill-color", "#0e0e11"); } catch {}
-    try { map.setPaintProperty("building", "fill-opacity", 0.4); } catch {}
+    paint("building", "fill-color", "#0e0e11");
+    paint("building", "fill-opacity", 0.4);
 
-    // Labels — muted zinc
     const labelLayers = [
       "road-label", "road-number-shield", "road-exit-shield",
       "settlement-major-label", "settlement-minor-label", "settlement-subdivision-label",
@@ -64,32 +68,24 @@ export function applyObsidianStyle(map: mapboxgl.Map) {
       "state-label", "country-label", "continent-label",
     ];
     for (const id of labelLayers) {
-      try { map.setPaintProperty(id, "text-color", "#52525b"); } catch {}
-      try { map.setPaintProperty(id, "text-halo-color", "#050505"); } catch {}
-      try { map.setPaintProperty(id, "text-halo-width", 1.5); } catch {}
+      paint(id, "text-color", "#52525b");
+      paint(id, "text-halo-color", "#050505");
+      paint(id, "text-halo-width", 1.5);
     }
 
-    // Hide POI icons entirely
-    const hideLayers = [
-      "poi-label", "transit-label", "airport-label",
-      "natural-point-label",
-    ];
-    for (const id of hideLayers) {
-      try { map.setLayoutProperty(id, "visibility", "none"); } catch {}
+    for (const id of ["poi-label", "transit-label", "airport-label", "natural-point-label"]) {
+      layout(id, "visibility", "none");
     }
 
-    // Land use — invisible
-    try { map.setPaintProperty("landuse", "fill-color", "#09090b"); } catch {}
-    try { map.setPaintProperty("landuse", "fill-opacity", 0); } catch {}
+    paint("landuse", "fill-color", "#09090b");
+    paint("landuse", "fill-opacity", 0);
 
-    // Boundaries — very subtle
-    try { map.setPaintProperty("admin-0-boundary", "line-color", "#27272a"); } catch {}
-    try { map.setPaintProperty("admin-0-boundary", "line-opacity", 0.3); } catch {}
-    try { map.setPaintProperty("admin-1-boundary", "line-color", "#1a1a1e"); } catch {}
-    try { map.setPaintProperty("admin-1-boundary", "line-opacity", 0.2); } catch {}
+    paint("admin-0-boundary", "line-color", "#27272a");
+    paint("admin-0-boundary", "line-opacity", 0.3);
+    paint("admin-1-boundary", "line-color", "#1a1a1e");
+    paint("admin-1-boundary", "line-opacity", 0.2);
   };
 
-  // If style is already loaded, apply immediately; otherwise wait for the event
   if (map.isStyleLoaded()) {
     apply();
   } else {
