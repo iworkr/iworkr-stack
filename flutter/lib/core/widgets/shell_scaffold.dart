@@ -1,3 +1,7 @@
+// @module lib/core/widgets/shell_scaffold.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

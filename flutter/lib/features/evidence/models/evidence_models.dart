@@ -1,3 +1,7 @@
+// @module lib/features/evidence/models/evidence_models.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================================
 // Evidence Markup System — Data Models
 // ============================================================================

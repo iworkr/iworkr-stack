@@ -1,3 +1,7 @@
+// @module lib/features/execution/widgets/active_job_hud.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:ui';
 

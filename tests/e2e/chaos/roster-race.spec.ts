@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/chaos/roster-race.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Argus-Tartarus: Roster Collision — Double-Booking Race Condition
  *
  * The Vulnerability: A single UNFILLED shift slot exists.

@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "db:push": "supabase db push",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

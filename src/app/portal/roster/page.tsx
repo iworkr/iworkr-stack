@@ -1,3 +1,9 @@
+/**
+ * @page app/portal/roster/page.tsx
+ * @status STABLE
+ * @description Route — portal/roster
+ * @lastReview 2026-03-28
+ */
 import { getPortalRoster } from "@/app/actions/portal-family";
 import { FamilyPortalShell } from "@/components/portal/family-portal-shell";
 import { PortalRosterList, type RosterShift } from "@/components/portal/portal-roster-list";

@@ -1,6 +1,6 @@
 # Assets Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-26T07:07:56.365Z
+> **Generated**: 2026-03-26T07:17:36.891Z
 > **Module**: Assets (`/dashboard/assets` & `/dashboard/assets/[id]`)
 > **Test Framework**: Playwright (21 test suites)
 > **Total Findings**: 0

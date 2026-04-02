@@ -1,3 +1,7 @@
+// @module lib/features/compliance/services/cerberus_validator.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

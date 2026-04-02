@@ -1,3 +1,7 @@
+// @module lib/models/profile.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Profile model — maps to public.profiles
 class Profile {
   // Default timezone for Australian-focused app; overridden by user profile settings

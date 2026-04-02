@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/solon-law.ts
+ * @status STABLE
+ * @description Zod / shared schemas — solon-law
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 /* ── Enums ────────────────────────────────────────────── */

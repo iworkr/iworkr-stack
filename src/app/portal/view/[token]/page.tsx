@@ -1,3 +1,9 @@
+/**
+ * @page app/portal/view/[token]/page.tsx
+ * @status STABLE
+ * @description Route — portal/view/[token]
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

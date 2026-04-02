@@ -1,3 +1,7 @@
+// @module lib/features/workspace/widgets/workspace_switcher_sheet.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:ui';
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,7 @@
+// @module lib/features/schedule/screens/schedule_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';

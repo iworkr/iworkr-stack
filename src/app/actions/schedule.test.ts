@@ -1,3 +1,9 @@
+/**
+ * @module app/actions/schedule.test
+ * @status STABLE
+ * @description Vitest unit tests for schedule server actions (Supabase fully mocked).
+ * @lastReview 2026-03-28
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 

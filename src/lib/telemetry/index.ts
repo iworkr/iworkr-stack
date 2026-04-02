@@ -1,4 +1,10 @@
 /**
+ * @module lib/telemetry/index.ts
+ * @status STABLE
+ * @description Client telemetry / capture — index
+ * @lastReview 2026-03-28
+ */
+/**
  * Project Panopticon — Telemetry Module Public API
  *
  * Re-exports the capture engine for clean imports across the app.

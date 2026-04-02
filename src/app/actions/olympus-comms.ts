@@ -7,47 +7,8 @@
  */
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-
-async function verifySuperAdmin() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
-  const admin = createAdminSupabaseClient();
-
-  try {
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("id, email, is_super_admin")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-        return { id: user.id, email: user.email || "" };
-      }
-      return null;
-    }
-
-    if (!profile?.is_super_admin) {
-      if (SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
-        return { id: user.id, email: profile?.email || user.email || "" };
-      }
-      return null;
-    }
-    return { id: user.id, email: profile.email };
-  } catch {
-    if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-      return { id: user.id, email: user.email || "" };
-    }
-    return null;
-  }
-}
+import { verifySuperAdminServer } from "@/lib/super-admin-server";
 
 function escapeIlike(s: string) {
   return s.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_");
@@ -61,7 +22,7 @@ export async function listGlobalCommunications(opts: {
   direction?: string;
   search?: string;
 }) {
-  const caller = await verifySuperAdmin();
+  const caller = await verifySuperAdminServer();
   if (!caller) return { data: [], total: 0 };
 
   const admin = createAdminSupabaseClient();

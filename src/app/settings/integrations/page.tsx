@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/integrations/page.tsx
+ * @status STABLE
+ * @description Route — settings/integrations
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion } from "framer-motion";

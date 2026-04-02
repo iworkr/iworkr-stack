@@ -19,9 +19,9 @@ import {
   Text,
   View,
   StyleSheet,
-  PDFViewer,
-  BlobProvider,
+  pdf,
 } from "@react-pdf/renderer";
+import { useState, useEffect } from "react";
 import type { BillingInvoice, InvoiceLineItem } from "@/app/actions/billing";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -403,19 +403,52 @@ export function NdisInvoicePdfPreview({
   lineItems,
   orgMeta,
 }: NdisInvoicePdfProps) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let revoked = false;
+    let blobUrl: string | null = null;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const doc = NdisInvoiceDocument({ invoice, lineItems, orgMeta }) as any;
+        const blob = await pdf(doc).toBlob();
+        if (revoked) return;
+        blobUrl = URL.createObjectURL(blob);
+        setUrl(blobUrl);
+      } catch (err) {
+        console.error("NDIS PDF generation failed:", err);
+      } finally {
+        if (!revoked) setLoading(false);
+      }
+    })();
+
+    return () => {
+      revoked = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [invoice, lineItems, orgMeta]);
+
+  if (loading || !url) {
+    return (
+      <div
+        style={{ width: "100%", height: 300, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)", borderRadius: 6 }}
+      >
+        <span style={{ color: "#71717a", fontSize: 13 }}>Generating preview…</span>
+      </div>
+    );
+  }
+
   return (
-    <PDFViewer
+    <iframe
+      src={`${url}#toolbar=0&navpanes=0`}
+      title="NDIS Invoice Preview"
       width="100%"
       height="300"
       style={{ border: "none", borderRadius: 6 }}
-      showToolbar={false}
-    >
-      <NdisInvoiceDocument
-        invoice={invoice}
-        lineItems={lineItems}
-        orgMeta={orgMeta}
-      />
-    </PDFViewer>
+    />
   );
 }
 
@@ -426,25 +459,41 @@ export function NdisInvoiceDownloadButton({
   lineItems,
   orgMeta,
 }: NdisInvoicePdfProps) {
-  return (
-    <BlobProvider
-      document={
-        <NdisInvoiceDocument
-          invoice={invoice}
-          lineItems={lineItems}
-          orgMeta={orgMeta}
-        />
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let revoked = false;
+    let blobUrl: string | null = null;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const doc = NdisInvoiceDocument({ invoice, lineItems, orgMeta }) as any;
+        const blob = await pdf(doc).toBlob();
+        if (revoked) return;
+        blobUrl = URL.createObjectURL(blob);
+        setUrl(blobUrl);
+      } catch (err) {
+        console.error("NDIS PDF download generation failed:", err);
+      } finally {
+        if (!revoked) setLoading(false);
       }
+    })();
+
+    return () => {
+      revoked = true;
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [invoice, lineItems, orgMeta]);
+
+  return (
+    <a
+      href={url || "#"}
+      download={`${invoice.display_id}.pdf`}
+      className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
     >
-      {({ url, loading }) => (
-        <a
-          href={url || "#"}
-          download={`${invoice.display_id}.pdf`}
-          className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
-        >
-          {loading ? "Generating PDF..." : "Download PDF"}
-        </a>
-      )}
-    </BlobProvider>
+      {loading ? "Generating PDF..." : "Download PDF"}
+    </a>
   );
 }

@@ -1,3 +1,7 @@
+// @module lib/features/evidence/screens/evidence_capture_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================================
 // Evidence Capture Screen — Camera → AI Tag → Annotate → Save
 // ============================================================================

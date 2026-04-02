@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/security-headers.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Aegis-Citadel: Security Headers Verification Tests
  *
  * Playwright tests that verify all HTTP security headers are correctly

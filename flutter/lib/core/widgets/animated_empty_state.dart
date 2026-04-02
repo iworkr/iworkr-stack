@@ -1,3 +1,7 @@
+// @module lib/core/widgets/animated_empty_state.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

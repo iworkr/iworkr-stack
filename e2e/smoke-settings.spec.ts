@@ -1,4 +1,7 @@
 /**
+ * @module e2e/smoke-settings.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Smoke Test — Settings Routes
  * Crawls all settings protected routes with a longer timeout to avoid cascading failures.
  */

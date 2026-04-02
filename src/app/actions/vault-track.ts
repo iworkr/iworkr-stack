@@ -1,3 +1,9 @@
+/**
+ * @module app/actions/vault-track
+ * @status STABLE
+ * @description Inventory locations, stock levels, and transactions (vault / stock tracking server actions).
+ * @lastReview 2026-03-28
+ */
 "use server";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";

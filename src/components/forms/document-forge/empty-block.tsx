@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/document-forge/empty-block.tsx
+ * @status STABLE
+ * @description Forms & document forge — empty-block
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState, useEffect, useRef } from "react";

@@ -1,3 +1,7 @@
+// @module lib/models/health_observation.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Health observation model — maps to public.health_observations
 /// Project Nightingale: Health telemetry and vital sign tracking
 class HealthObservation {

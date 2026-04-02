@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/dashboard.ts
+ * @status STABLE
+ * @description Zod / shared schemas — dashboard
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const DashboardStatsSchema = z.object({

@@ -1,3 +1,7 @@
+// @module lib/core/widgets/shimmer_loading.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';

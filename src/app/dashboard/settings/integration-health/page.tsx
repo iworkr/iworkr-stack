@@ -8,6 +8,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/hooks/use-query-keys";
 import { motion, AnimatePresence } from "framer-motion";
@@ -810,9 +811,9 @@ export default function IntegrationHealthPage() {
                       <p className="text-xs font-medium text-zinc-300">No providers connected</p>
                       <p className="text-[10px] text-zinc-500 mt-0.5">
                         Connect an accounting provider in{" "}
-                        <a href="/dashboard/settings/integrations" className="text-emerald-400 hover:text-emerald-300 transition-colors">
+                        <Link href="/dashboard/settings/integrations" className="text-emerald-400 hover:text-emerald-300 transition-colors">
                           Settings → Integrations
-                        </a>{" "}
+                        </Link>{" "}
                         to begin syncing.
                       </p>
                     </div>

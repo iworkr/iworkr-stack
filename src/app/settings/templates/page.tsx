@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/templates/page.tsx
+ * @status STABLE
+ * @description Route — settings/templates
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Plus, FileText } from "lucide-react";

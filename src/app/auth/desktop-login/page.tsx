@@ -1,3 +1,9 @@
+/**
+ * @page app/auth/desktop-login/page.tsx
+ * @status STABLE
+ * @description Route — auth/desktop-login
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState } from "react";

@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/assets/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/assets
+ * @lastReview 2026-03-28
+ */
 export default function Loading() {
   return (
     <div className="flex h-full flex-col bg-[var(--background)]">

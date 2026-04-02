@@ -1,4 +1,7 @@
 /**
+ * @module e2e/global-setup.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Project Genesis — Playwright Global Setup
  *
  * Performs API-level authentication ONCE per test run for each role,

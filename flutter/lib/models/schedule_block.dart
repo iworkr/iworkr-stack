@@ -1,3 +1,7 @@
+// @module lib/models/schedule_block.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// ScheduleBlock model — maps to public.schedule_blocks
 /// Updated for Project Outrider-Route: route_sequence, pinning, travel metadata
 class ScheduleBlock {

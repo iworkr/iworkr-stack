@@ -1,4 +1,7 @@
 /**
+ * @module e2e/comprehensive/full-app-functional.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Full Application — Functional E2E Test Suite
  * ============================================================
@@ -211,7 +214,8 @@ test.describe("Jobs", () => {
       await firstRow.click();
       await page.waitForTimeout(2000);
       const url = page.url();
-      const hasDetail = url.includes("/jobs/") && url.split("/jobs/").pop()?.length! > 0;
+      const jobSegment = url.split("/jobs/").pop();
+      const hasDetail = url.includes("/jobs/") && !!jobSegment && jobSegment.length > 0;
       const hasSlideOver = await page.locator('[class*="slide"], [class*="panel"], [class*="drawer"]').first().isVisible().catch(() => false);
       expect(hasDetail || hasSlideOver).toBeTruthy();
     }

@@ -1,3 +1,7 @@
+// @module lib/features/routes/widgets/dark_matter_map.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';

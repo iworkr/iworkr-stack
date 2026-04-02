@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/billing/page.tsx
+ * @status STABLE
+ * @description Route — settings/billing
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

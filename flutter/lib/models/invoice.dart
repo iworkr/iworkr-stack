@@ -1,3 +1,7 @@
+// @module lib/models/invoice.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Invoice model — mirrors Supabase `invoices` table.
 class Invoice {
   final String id;

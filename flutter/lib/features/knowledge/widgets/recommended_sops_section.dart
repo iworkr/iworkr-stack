@@ -1,3 +1,7 @@
+// @module lib/features/knowledge/widgets/recommended_sops_section.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

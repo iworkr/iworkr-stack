@@ -1,3 +1,9 @@
+/**
+ * @module scripts/crucible_registry.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
 import { z } from "zod";
 import type { Faker } from "@faker-js/faker";
 

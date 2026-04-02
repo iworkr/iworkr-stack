@@ -1,4 +1,7 @@
 /**
+ * @module e2e/schedule.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Schedule Module — Comprehensive E2E Audit
  * ============================================================

@@ -1,4 +1,10 @@
 /**
+ * @module components/maps/obsidian-map-styles.ts
+ * @status STABLE
+ * @description Maps helpers — obsidian-map-styles
+ * @lastReview 2026-03-28
+ */
+/**
  * Project Dark Earth — Obsidian / Linear map styling for Mapbox GL.
  * Ultra-dark monochrome: Vantablack (#050505), Zinc-950 (#09090b), no POI clutter.
  *
@@ -26,11 +32,11 @@ export function applyObsidianStyle(map: mapboxgl.Map) {
   };
 
   const paint = (id: string, prop: string, value: string | number) => {
-    if (has(id)) map.setPaintProperty(id, prop, value);
+    if (has(id)) map.setPaintProperty(id, prop as any, value);
   };
 
   const layout = (id: string, prop: string, value: string) => {
-    if (has(id)) map.setLayoutProperty(id, prop, value);
+    if (has(id)) map.setLayoutProperty(id, prop as any, value);
   };
 
   const apply = () => {

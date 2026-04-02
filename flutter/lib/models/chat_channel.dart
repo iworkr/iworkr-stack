@@ -1,3 +1,7 @@
+// @module lib/models/chat_channel.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Chat channel model — matches `channels` table.
 class ChatChannel {
   final String id;

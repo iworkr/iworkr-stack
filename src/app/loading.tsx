@@ -1,3 +1,9 @@
+/**
+ * @page app/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app
+ * @lastReview 2026-03-28
+ */
 export default function Loading() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)]">

@@ -1,3 +1,9 @@
+/**
+ * @module tests/edge-functions/rate-limit-dlq.test.ts
+ * @status TEST
+ * @lastReview 2026-03-28
+ */
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 /**
@@ -11,7 +17,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 interface DLQEntry {
   id: string;
   function_name: string;
-  payload: any;
+  payload: Record<string, unknown>;
   retry_count: number;
   next_retry_at: Date;
   status: "pending" | "retrying" | "dead";
@@ -43,13 +49,13 @@ function processRetry(entry: DLQEntry, maxRetries = 5): DLQEntry {
 // Simulate external API call with configurable responses
 class MockExternalAPI {
   private callCount = 0;
-  private responses: Array<{ status: number; body: any }>;
+  private responses: Array<{ status: number; body: Record<string, unknown> }>;
 
-  constructor(responses: Array<{ status: number; body: any }>) {
+  constructor(responses: Array<{ status: number; body: Record<string, unknown> }>) {
     this.responses = responses;
   }
 
-  async call(): Promise<{ status: number; body: any }> {
+  async call(): Promise<{ status: number; body: Record<string, unknown> }> {
     const idx = Math.min(this.callCount, this.responses.length - 1);
     this.callCount++;
     return this.responses[idx];

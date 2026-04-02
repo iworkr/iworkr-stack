@@ -1,14 +1,18 @@
+/**
+ * @page app/pay/[invoiceId]/page.tsx
+ * @status STABLE
+ * @description Route — pay/[invoiceId]
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { CheckCircle, AlertTriangle, Loader2, Lock, FileText, Download } from "lucide-react";
-
-// ═══════════════════════════════════════════════════════════
-// ── Public Invoice Payment — Obsidian Checkout ───────────
-// ═══════════════════════════════════════════════════════════
+import { CheckCircle, AlertTriangle, Loader2, Lock, FileText, Download, CreditCard, PenLine } from "lucide-react";
+import type { InvoiceBlock, GlobalSettings, WorkspaceBrand as EditorWorkspace } from "@/components/finance/editor/types";
+import { calcTotals } from "@/components/finance/editor/math";
 
 interface InvoiceData {
   id: string;
@@ -28,6 +32,8 @@ interface InvoiceData {
   due_date: string;
   org_id: string;
   notes?: string | null;
+  blocks_json?: InvoiceBlock[] | null;
+  editor_version?: number;
 }
 
 export default function PayInvoicePage() {
@@ -107,10 +113,24 @@ export default function PayInvoicePage() {
     );
   }
 
+  // V2 block-based rendering
+  if (invoice.editor_version === 2 && invoice.blocks_json && invoice.blocks_json.length > 0) {
+    return (
+      <Shell brandColor={invoice.brand_color} logo={invoice.organization_logo} orgName={invoice.organization_name}>
+        <div className="max-w-[800px] mx-auto w-full">
+          <BlockInvoiceView blocks={invoice.blocks_json} invoice={invoice} />
+          <div className="mt-6">
+            <PaymentSection invoice={invoice} />
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  // Legacy v1 rendering
   return (
     <Shell brandColor={invoice.brand_color} logo={invoice.organization_logo} orgName={invoice.organization_name}>
       <div className="max-w-lg mx-auto w-full">
-        {/* Invoice Header */}
         <div className="mb-6">
           <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-1">
             INVOICE {invoice.invoice_number}
@@ -123,7 +143,6 @@ export default function PayInvoicePage() {
           </p>
         </div>
 
-        {/* Line Items */}
         <div className="bg-zinc-950 border border-white/5 rounded-xl p-5 mb-6">
           <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-3">ITEMS</p>
           <div className="space-y-3">
@@ -157,7 +176,6 @@ export default function PayInvoicePage() {
           </div>
         </div>
 
-        {/* Notes */}
         {invoice.notes && (
           <div className="bg-zinc-950 border border-white/5 rounded-xl p-4 mb-6">
             <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-2">NOTES</p>
@@ -165,7 +183,6 @@ export default function PayInvoicePage() {
           </div>
         )}
 
-        {/* Payment */}
         <PaymentSection invoice={invoice} />
       </div>
     </Shell>
@@ -324,6 +341,162 @@ function CheckoutForm({ total, currency }: { total: number; currency: string }) 
         Secured by Stripe. Your card details are never stored on our servers.
       </p>
     </form>
+  );
+}
+
+// ── Block Invoice View (v2) ──────────────────────────────
+
+function BlockInvoiceView({ blocks, invoice }: { blocks: InvoiceBlock[]; invoice: InvoiceData }) {
+  const accent = invoice.brand_color || "#10B981";
+
+  return (
+    <div className="bg-white rounded-xl shadow-2xl overflow-hidden text-gray-900" style={{ fontFamily: "Inter, sans-serif" }}>
+      {blocks.map((block) => {
+        switch (block.type) {
+          case "header": {
+            const c = block.content as any;
+            return (
+              <div key={block.id} className="px-10 pt-10 pb-4">
+                <div style={{ height: 2, backgroundColor: accent, opacity: 0.3, marginBottom: 20 }} />
+                <div className="flex justify-between items-start">
+                  <div className="max-w-[55%]">
+                    {c.showLogo && invoice.organization_logo ? (
+                      <img src={invoice.organization_logo} alt="" className="mb-2 max-h-12 max-w-[160px] object-contain" />
+                    ) : (
+                      <div className="text-lg font-bold text-gray-900 mb-1">{invoice.organization_name}</div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-[10px] tracking-[2px] text-gray-400">{c.title || "INVOICE"}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          case "client_details": {
+            const c = block.content as any;
+            return (
+              <div key={block.id} className="px-10 py-3">
+                <div className="font-mono text-[7px] tracking-[2px] text-gray-400 mb-1.5 uppercase">Bill To</div>
+                <div className="text-[13px] font-bold text-gray-900">{c.clientName || invoice.client_name}</div>
+                {c.clientEmail && <div className="text-[9px] text-gray-500">{c.clientEmail}</div>}
+              </div>
+            );
+          }
+          case "meta": {
+            const c = block.content as any;
+            return (
+              <div key={block.id} className="px-10 py-2 flex justify-end">
+                <div className="text-right">
+                  <div className="font-mono text-xl font-bold" style={{ color: accent }}>{c.displayId || invoice.invoice_number}</div>
+                  <div className="text-[9px] text-gray-500 mt-1">
+                    Due {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : "on receipt"}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+          case "line_items": {
+            const c = block.content as any;
+            return (
+              <div key={block.id} className="px-10 py-3">
+                <div className="h-px bg-gray-200 mb-4" />
+                <div className="flex pb-1.5 mb-2" style={{ borderBottom: `2px solid ${accent}` }}>
+                  <div className="flex-1 font-mono text-[7px] tracking-[1.5px] text-gray-400 uppercase">Description</div>
+                  <div className="w-[50px] text-right font-mono text-[7px] tracking-[1.5px] text-gray-400 uppercase">Qty</div>
+                  <div className="w-[80px] text-right font-mono text-[7px] tracking-[1.5px] text-gray-400 uppercase">Price</div>
+                  <div className="w-[80px] text-right font-mono text-[7px] tracking-[1.5px] text-gray-400 uppercase">Amount</div>
+                </div>
+                {(c.items || []).map((item: any) => (
+                  <div key={item.id} className="flex items-center py-1.5 border-b border-gray-100">
+                    <div className="flex-1 text-[10px] text-gray-700">{item.description}</div>
+                    <div className="w-[50px] text-right font-mono text-[9px] text-gray-600">{item.quantity}</div>
+                    <div className="w-[80px] text-right font-mono text-[9px] text-gray-600">{formatCurrency(item.unitPrice, invoice.currency)}</div>
+                    <div className="w-[80px] text-right font-mono text-[9px] font-bold text-gray-800">
+                      {formatCurrency(Math.round(item.quantity * item.unitPrice * 100) / 100, invoice.currency)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          case "totals":
+            return (
+              <div key={block.id} className="px-10 py-3">
+                <div className="ml-auto w-[220px]">
+                  <div className="flex justify-between py-1">
+                    <span className="text-[9px] text-gray-500">Subtotal</span>
+                    <span className="font-mono text-[10px] text-gray-700">{formatCurrency(invoice.subtotal, invoice.currency)}</span>
+                  </div>
+                  {invoice.tax_amount > 0 && (
+                    <div className="flex justify-between py-1">
+                      <span className="text-[9px] text-gray-500">GST ({invoice.tax_rate}%)</span>
+                      <span className="font-mono text-[10px] text-gray-700">{formatCurrency(invoice.tax_amount, invoice.currency)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2 mt-1" style={{ borderTop: `2px solid ${accent}` }}>
+                    <span className="text-[13px] font-bold text-gray-900">Total</span>
+                    <span className="font-mono text-[14px] font-bold" style={{ color: accent }}>{formatCurrency(invoice.total, invoice.currency)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          case "notes": {
+            const c = block.content as any;
+            if (!c.text) return null;
+            return (
+              <div key={block.id} className="px-10 py-3 border-t border-gray-100">
+                <div className="font-mono text-[7px] tracking-[2px] text-gray-400 mb-1.5 uppercase">Notes</div>
+                <div className="text-[9px] text-gray-500 leading-relaxed whitespace-pre-wrap">{c.text}</div>
+              </div>
+            );
+          }
+          case "payment_button":
+            return null; // Payment is handled separately below the canvas
+          case "signature": {
+            const c = block.content as any;
+            return (
+              <div key={block.id} className="px-10 py-4">
+                <div className="font-mono text-[7px] tracking-[2px] text-gray-400 mb-2 uppercase">{c.label || "Signature"}</div>
+                <div className="h-20 rounded-md border-2 border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                  {c.signatureDataUrl ? (
+                    <img src={c.signatureDataUrl} alt="Signature" className="max-h-16 object-contain" />
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-[10px] text-gray-300">
+                      <PenLine size={12} />
+                      <span>Tap to sign</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+          case "text": {
+            const c = block.content as any;
+            if (!c.text) return null;
+            return (
+              <div key={block.id} className="px-10 py-2">
+                <div className="text-gray-600 leading-relaxed whitespace-pre-wrap" style={{ fontSize: c.fontSize || 10 }}>{c.text}</div>
+              </div>
+            );
+          }
+          case "divider":
+            return (
+              <div key={block.id} className="px-10 py-2">
+                <div style={{ height: (block.content as any).thickness || 1, backgroundColor: (block.content as any).color || "#e5e5e5" }} />
+              </div>
+            );
+          case "spacer":
+            return <div key={block.id} style={{ height: (block.content as any).height || 24 }} />;
+          default:
+            return null;
+        }
+      })}
+      <div className="px-10 py-4 flex justify-between text-[7px] text-gray-300">
+        <span>{invoice.organization_name}</span>
+        <span>Powered by iWorkr</span>
+      </div>
+    </div>
   );
 }
 

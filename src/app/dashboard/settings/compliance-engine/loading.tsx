@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/settings/compliance-engine/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/settings/compliance-engine
+ * @lastReview 2026-03-28
+ */
 export default function ComplianceEngineLoading() {
   return (
     <div className="w-full max-w-5xl mx-auto p-6 space-y-8 animate-pulse">

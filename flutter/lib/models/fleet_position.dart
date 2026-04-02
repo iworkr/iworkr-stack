@@ -1,3 +1,7 @@
+// @module lib/models/fleet_position.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Live fleet position — maps to `fleet_positions` table.
 class FleetPosition {
   final String id;

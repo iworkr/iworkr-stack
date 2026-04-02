@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/preferences/page.tsx
+ * @status STABLE
+ * @description Route — settings/preferences
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Monitor, Moon, Sun } from "lucide-react";

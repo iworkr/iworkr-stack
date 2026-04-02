@@ -886,7 +886,7 @@ export default function FinancePage() {
 
                     return (
                       <motion.div
-                        key={inv.id}
+                        key={inv.dbId || `${inv.id}-${i}`}
                         layout
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}

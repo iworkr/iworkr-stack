@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/menu.ts
+ * @status STABLE
+ * @description Electron shell — menu
+ * @lastReview 2026-03-28
+ */
 import { Menu, BrowserWindow, app, shell } from "electron";
 
 const IS_MAC = process.platform === "darwin";

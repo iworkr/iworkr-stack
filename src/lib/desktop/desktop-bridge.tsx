@@ -1,3 +1,9 @@
+/**
+ * @module lib/desktop/desktop-bridge.tsx
+ * @status STABLE
+ * @description Electron shell integration — desktop-bridge
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect } from "react";

@@ -1,3 +1,7 @@
+// @module eslint.config.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
@@ -26,6 +30,13 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-explicit-any": "warn",
       // Prevent stale closures and infinite re-renders
       "react-hooks/exhaustive-deps": "warn",
+      // Next.js 16 / React Compiler rules — too noisy for existing app patterns; re-enable incrementally
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/preserve-manual-memoization": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/set-state-in-render": "off",
     },
   },
   // New files created after Aegis-Refactor must be strictly clean

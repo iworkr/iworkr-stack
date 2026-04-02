@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/schads-interpreter.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the schads-interpreter edge function.
  * Tests the 5-step deterministic SCHADS Award payroll pipeline.
  *

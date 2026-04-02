@@ -1,3 +1,9 @@
+/**
+ * @module components/forms/document-forge/forge-config.ts
+ * @status STABLE
+ * @description Document forge config — forge-config
+ * @lastReview 2026-03-28
+ */
 /* ── Document Forge: block types & defaults ───────────────── */
 
 import type { FormBlock, BlockType } from "@/lib/forms-data";

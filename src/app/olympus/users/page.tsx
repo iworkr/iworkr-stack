@@ -1,3 +1,9 @@
+/**
+ * @page app/olympus/users/page.tsx
+ * @status STABLE
+ * @description Route — olympus/users
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

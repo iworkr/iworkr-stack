@@ -1,3 +1,7 @@
+// @module lib/core/widgets/sync_indicator.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show OrderingTerm;

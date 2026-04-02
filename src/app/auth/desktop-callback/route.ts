@@ -1,3 +1,9 @@
+/**
+ * @route app/auth/desktop-callback/route.ts
+ * @status STABLE
+ * @description HTTP handler — auth/desktop-callback
+ * @lastReview 2026-03-28
+ */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 

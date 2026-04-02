@@ -54,7 +54,7 @@ interface SwmsRecord {
   jobs?: { id: string; title: string } | null;
 }
 
-interface StopWorkAlert extends SwmsRecord {}
+type StopWorkAlert = SwmsRecord;
 
 interface SwmsTemplate {
   id: string;

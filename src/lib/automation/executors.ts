@@ -1,4 +1,10 @@
 /**
+ * @module lib/automation/executors.ts
+ * @status STABLE
+ * @description Automation engine — dispatch, events, executors — executors
+ * @lastReview 2026-03-28
+ */
+/**
  * iWorkr Automation Action Executors
  *
  * Each executor handles a specific action type within an automation flow.

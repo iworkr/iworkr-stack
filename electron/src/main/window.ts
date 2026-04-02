@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/window.ts
+ * @status STABLE
+ * @description Electron shell — window
+ * @lastReview 2026-03-28
+ */
 import { BrowserWindow, shell } from "electron";
 import path from "path";
 import log from "electron-log/main";

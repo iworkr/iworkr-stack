@@ -1,3 +1,7 @@
+// @module lib/features/time_attendance/services/ntp_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:http/http.dart' as http;

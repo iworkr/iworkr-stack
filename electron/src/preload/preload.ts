@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/preload/preload.ts
+ * @status STABLE
+ * @description Electron shell — preload
+ * @lastReview 2026-03-28
+ */
 import { contextBridge, ipcRenderer } from "electron";
 
 const api = {

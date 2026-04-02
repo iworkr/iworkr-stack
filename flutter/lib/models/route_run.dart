@@ -1,3 +1,7 @@
+// @module lib/models/route_run.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Route Run — optimized daily route for a technician.
 ///
 /// Mirrors Supabase `route_runs` table. Contains an ordered sequence

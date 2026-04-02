@@ -1,3 +1,9 @@
+/**
+ * @module lib/pdf/generate-form-pdf.ts
+ * @status STABLE
+ * @description PDF generation utilities — generate-form-pdf
+ * @lastReview 2026-03-28
+ */
 import jsPDF from "jspdf";
 import type { FormSubmission } from "@/lib/forms-data";
 

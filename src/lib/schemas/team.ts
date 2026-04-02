@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/team.ts
+ * @status STABLE
+ * @description Zod / shared schemas — team
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const MemberRoleSchema = z.enum(["owner", "admin", "manager", "member", "viewer"]);

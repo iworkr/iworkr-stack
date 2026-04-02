@@ -1,3 +1,7 @@
+// @module lib/features/knowledge/screens/article_viewer_screen.dart
+// @status INCOMPLETE — full HTML (flutter_html) + video_player for embeds
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

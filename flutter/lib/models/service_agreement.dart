@@ -1,3 +1,7 @@
+// @module lib/models/service_agreement.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Service agreement model — maps to public.service_agreements
 /// Project Nightingale: NDIS plan/budget management
 class ServiceAgreement {

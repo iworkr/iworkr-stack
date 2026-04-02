@@ -1,3 +1,7 @@
+// @module lib/models/job.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Job model — maps to public.jobs
 class Job {
   final String id;

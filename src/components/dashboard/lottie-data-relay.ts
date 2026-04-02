@@ -1,3 +1,9 @@
+/**
+ * @module components/dashboard/lottie-data-relay.ts
+ * @status STABLE
+ * @description Dashboard Lottie data — lottie-data-relay
+ * @lastReview 2026-03-28
+ */
 export const radarScanAnimation = {
   v: "5.7.4",
   fr: 30,

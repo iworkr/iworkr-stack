@@ -1,3 +1,7 @@
+// @module lib/features/evidence/widgets/ai_tag_chips.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================================
 // AI Tag Chips — Interactive confidence-scored tag display
 // ============================================================================

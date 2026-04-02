@@ -16,6 +16,7 @@
 /test-results/
 /test-output.log
 e2e/.auth/
+playwright/.auth/
 *.png.diff.png
 
 # next.js
@@ -65,3 +66,4 @@ flutter/ios/fastlane/test_output/
 *.cer
 *.mobileprovision
 *.ipa
+.env*.local

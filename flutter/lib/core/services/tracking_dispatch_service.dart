@@ -1,3 +1,7 @@
+// @module lib/core/services/tracking_dispatch_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:math';
 

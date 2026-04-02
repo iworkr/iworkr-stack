@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/ambient/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/ambient
+ * @lastReview 2026-03-28
+ */
 export default function AmbientLoading() {
   return (
     <div className="flex flex-col h-full bg-[#050505]">

@@ -1,3 +1,7 @@
+// @module lib/core/router/app_router.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

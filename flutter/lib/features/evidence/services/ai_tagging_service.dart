@@ -1,3 +1,7 @@
+// @module lib/features/evidence/services/ai_tagging_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

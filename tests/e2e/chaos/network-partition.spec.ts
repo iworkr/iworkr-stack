@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/chaos/network-partition.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Argus-Tartarus: Network Partition & Dead Letter Queue Tests
  *
  * Tests that when external services fail (Stripe, Resend, etc.),

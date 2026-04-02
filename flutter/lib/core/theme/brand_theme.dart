@@ -1,3 +1,7 @@
+// @module lib/core/theme/brand_theme.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 
 /// Project Chameleon — ThemeExtension for white-label branding.

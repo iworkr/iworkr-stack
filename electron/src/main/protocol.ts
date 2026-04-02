@@ -1,3 +1,10 @@
+/**
+ * @module electron/protocol
+ * @status STABLE
+ * @description Custom protocol handler (iworkr://) — routes auth/callback and deep links.
+ * @risk P1 — Logs full incoming URL; OAuth callbacks can include sensitive query params — avoid shipping verbose logs in production builds.
+ * @lastReview 2026-03-28
+ */
 import { app } from "electron";
 import path from "path";
 import log from "electron-log/main";

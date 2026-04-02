@@ -1,3 +1,9 @@
+/**
+ * @error app/global-error.tsx
+ * @status STABLE
+ * @description Root global error boundary
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect } from "react";

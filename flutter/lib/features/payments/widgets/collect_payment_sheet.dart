@@ -1,3 +1,7 @@
+// @module lib/features/payments/widgets/collect_payment_sheet.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

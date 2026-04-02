@@ -1,3 +1,7 @@
+// @module lib/models/market_trend.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Market trend — time-series pricing data for a service category.
 class MarketTrend {
   final String id;

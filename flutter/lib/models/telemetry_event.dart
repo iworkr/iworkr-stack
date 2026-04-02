@@ -1,3 +1,7 @@
+// @module lib/models/telemetry_event.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Telemetry Event — forensic audit record for every job interaction.
 ///
 /// Mirrors Supabase `telemetry_events` table. Each interaction (start job,

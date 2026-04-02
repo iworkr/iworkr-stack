@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/automation-worker.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the automation-worker edge function.
  *
  * Run with:

@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/statuses/page.tsx
+ * @status STABLE
+ * @description Route — settings/statuses
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { StatusIcon } from "@/components/app/status-icon";

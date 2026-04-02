@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/sentry.ts
+ * @status STABLE
+ * @description Electron shell — sentry
+ * @lastReview 2026-03-28
+ */
 import * as Sentry from "@sentry/electron/main";
 import { app } from "electron";
 import log from "electron-log/main";

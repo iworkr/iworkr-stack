@@ -1,3 +1,7 @@
+// @module lib/core/widgets/obsidian_paywall.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

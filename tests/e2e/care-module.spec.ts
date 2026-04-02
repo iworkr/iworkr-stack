@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/care-module.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Care Sector Deep CRUD Matrix — Argus-Omniscience
  *
  * Exhaustive Create, Read, Update, Delete lifecycle tests for every

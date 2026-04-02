@@ -1,3 +1,7 @@
+// @module lib/features/workspace/screens/create_workspace_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';

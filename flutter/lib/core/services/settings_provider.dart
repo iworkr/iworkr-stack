@@ -1,3 +1,7 @@
+// @module lib/core/services/settings_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';

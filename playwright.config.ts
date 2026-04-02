@@ -1,3 +1,9 @@
+/**
+ * @module playwright.config.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
 import { defineConfig, devices } from "@playwright/test";
 import dotenv from "dotenv";
 import path from "path";

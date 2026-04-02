@@ -1,3 +1,7 @@
+// @module lib/core/services/route_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';

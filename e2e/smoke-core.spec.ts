@@ -1,4 +1,7 @@
 /**
+ * @module e2e/smoke-core.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Smoke Test — Core Routes (Dashboard, Jobs, Clients)
  * Crawls core protected routes with adequate timeout.
  * Runs in parallel with smoke-settings for CI sharding.

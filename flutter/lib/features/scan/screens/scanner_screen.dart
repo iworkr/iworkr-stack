@@ -1,3 +1,7 @@
+// @module lib/features/scan/screens/scanner_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';

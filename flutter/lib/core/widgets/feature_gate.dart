@@ -1,3 +1,7 @@
+// @module lib/core/widgets/feature_gate.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';

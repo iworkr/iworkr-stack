@@ -1,4 +1,7 @@
 /**
+ * @module e2e/integrations.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Integrations Module — Post-PRD Verification E2E
  * ============================================================

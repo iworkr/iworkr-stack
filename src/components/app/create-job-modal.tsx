@@ -32,7 +32,7 @@ import { PopoverMenu } from "./popover-menu";
 import { useToastStore } from "./action-toast";
 import { useJobsStore } from "@/lib/jobs-store";
 import { useClientsStore } from "@/lib/clients-store";
-import { useOrg } from "@/lib/hooks/use-org";
+import { useOrg, resolveWorkspaceOrgId } from "@/lib/hooks/use-org";
 import { useAuthStore } from "@/lib/auth-store";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
 import { useSectorFeatures } from "@/lib/hooks/use-sector-features";
@@ -90,8 +90,9 @@ function getAvatarColor(initials: string) {
   return AVATAR_COLORS[c % AVATAR_COLORS.length];
 }
 
+/** Any standard hex UUID (avoids rejecting valid org IDs from Postgres / newer UUID versions). */
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isUuid(value: string | null | undefined): value is string {
   return typeof value === "string" && UUID_REGEX.test(value);
@@ -130,7 +131,6 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   const { createJobServer } = useJobsStore();
   const storeClients = useClientsStore((s) => s.clients);
   const { orgId } = useOrg();
-  const hasValidOrgContext = isUuid(orgId);
   const orgName = useAuthStore((s) => s.currentOrg?.name);
   const { t } = useIndustryLexicon();
   const { isCare } = useSectorFeatures();
@@ -140,27 +140,38 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
 
   /* ── Fetch team members from DB ──────────────────────── */
   useEffect(() => {
-    if (!hasValidOrgContext) return;
-    const supabase = createClient();
-    (supabase as any)
-      .from("organization_members")
-      .select("profile_id, profiles(id, full_name, avatar_url)")
-      .eq("organization_id", orgId)
-      .then(({ data }: any) => {
-        if (!data) return;
-        const members = data
-          .filter((m: any) => m.profiles?.full_name)
-          .map((m: any) => {
-            const name = m.profiles.full_name;
-            const parts = name.trim().split(/\s+/);
-            const initials = parts.length >= 2
-              ? (parts[0][0] + parts[1][0]).toUpperCase()
-              : name.slice(0, 2).toUpperCase();
-            return { id: m.profile_id, name, initials };
-          });
-        setTeamMembers(members);
-      });
-  }, [orgId, hasValidOrgContext]);
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      let oid: string | null = isUuid(orgId) ? orgId : null;
+      if (!oid) {
+        oid = await resolveWorkspaceOrgId();
+      }
+      if (cancelled || !isUuid(oid)) return;
+
+      const supabase = createClient();
+      const { data } = await (supabase as any)
+        .from("organization_members")
+        .select("profile_id, profiles(id, full_name, avatar_url)")
+        .eq("organization_id", oid);
+
+      if (cancelled || !data) return;
+      const members = data
+        .filter((m: any) => m.profiles?.full_name)
+        .map((m: any) => {
+          const name = m.profiles.full_name;
+          const parts = name.trim().split(/\s+/);
+          const initials = parts.length >= 2
+            ? (parts[0][0] + parts[1][0]).toUpperCase()
+            : name.slice(0, 2).toUpperCase();
+          return { id: m.profile_id, name, initials };
+        });
+      setTeamMembers(members);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, orgId]);
 
   /* ── Derived ────────────────────────────────────────────── */
   const allClients = storeClients;
@@ -298,7 +309,12 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
   /* ── Save ───────────────────────────────────────────────── */
   async function handleSave() {
     if (!title.trim() || saving) return;
-    if (!hasValidOrgContext) {
+
+    let effectiveOrgId: string | null = isUuid(orgId) ? orgId : null;
+    if (!effectiveOrgId) {
+      effectiveOrgId = await resolveWorkspaceOrgId();
+    }
+    if (!isUuid(effectiveOrgId)) {
       addToast("Workspace context not loaded. Please refresh and try again.");
       return;
     }
@@ -306,7 +322,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
     // Find the team member to get their profile id for assignment
     const assigneeMember = assignee !== "Unassigned" ? teamMembers.find((t) => t.name === assignee) : null;
 
-    if (hasValidOrgContext) {
+    {
       // Server-synced path
       setSaving(true);
       try {
@@ -319,7 +335,7 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
           : [];
 
         const result = await createJobServer({
-          organization_id: orgId,
+          organization_id: effectiveOrgId,
           title: title.trim(),
           description: description.trim() || null,
           status: (estimateEnabled ? "backlog" : status) as "urgent" | "backlog" | "todo" | "in_progress" | "done" | "cancelled",
@@ -348,12 +364,6 @@ export function CreateJobModal({ open, onClose }: CreateJobModalProps) {
       } finally {
         setSaving(false);
       }
-    } else {
-      // No org available — cannot persist job
-      console.error("Cannot create job: no organization context");
-      addToast("Unable to save — please refresh and try again");
-      setSaving(false);
-      return;
     }
 
     if (createMore) {

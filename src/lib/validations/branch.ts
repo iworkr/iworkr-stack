@@ -1,3 +1,9 @@
+/**
+ * @module lib/validations/branch.ts
+ * @status STABLE
+ * @description Validation helpers — branch
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const BranchSchema = z.object({

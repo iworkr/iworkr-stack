@@ -1,3 +1,7 @@
+// @module lib/models/progress_note.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Progress note model — maps to public.progress_notes
 /// Project Nightingale: Shift completion reports with EVV data
 class ProgressNote {

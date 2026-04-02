@@ -1,3 +1,9 @@
+/**
+ * @component components/finance/TravelActionBar.tsx
+ * @status STABLE
+ * @description Finance dashboard UI — TravelActionBar
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { RefreshCw, CheckCheck, CloudUpload } from "lucide-react";

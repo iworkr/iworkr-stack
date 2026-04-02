@@ -1,4 +1,7 @@
 /**
+ * @module e2e/comprehensive/spider.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Project Panopticon — Link Spider
  * Scrapes ALL <a> tags from dashboard, visits every link, asserts 200 OK, no 404, no console errors.
  */

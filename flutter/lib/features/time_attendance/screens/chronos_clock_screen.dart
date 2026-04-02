@@ -1,3 +1,7 @@
+// @module lib/features/time_attendance/screens/chronos_clock_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

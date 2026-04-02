@@ -1,3 +1,7 @@
+// @module lib/features/safety/screens/swms_assessment_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================================
 // Aegis SWMS — Dynamic SWMS & Geofenced Compliance Assessment
 // ============================================================================

@@ -1,46 +1,44 @@
 /**
  * @page /dashboard/finance/invoices/new
  * @status COMPLETE
- * @description New invoice creation form with line items, client selection, and send/save actions
- * @dataSource server-action
- * @lastAudit 2026-03-22
+ * @description Moneta-Canvas — WYSIWYG block-based invoice editor with drag-and-drop, contextual panels, inline editing, and dual-render PDF pipeline
+ * @dataSource zustand (invoice-editor-store) + server-action
+ * @lastAudit 2026-03-26
  */
 "use client";
 
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  Send,
-  ChevronDown,
-  Check,
   CheckCircle,
-  GripVertical,
-  Save,
-  Eye,
-  X,
-  Search,
-  Percent,
-  DollarSign,
-  Loader2,
   Copy,
   ExternalLink,
   Link2,
+  Check,
+  Loader2,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useAuthStore } from "@/lib/auth-store";
-import { createClient } from "@/lib/supabase/client";
 import { useClientsStore } from "@/lib/clients-store";
 import { useFinanceStore } from "@/lib/finance-store";
+import { dispatchInvoiceEmail } from "@/app/actions/finance";
 import { useToastStore } from "@/components/app/action-toast";
 import { useOrg } from "@/lib/hooks/use-org";
 import { useIndustryLexicon } from "@/lib/industry-lexicon";
-import type { InvoiceData, InvoiceLineItemData, WorkspaceBrand } from "@/components/pdf/invoice-types";
-import { calcInvoiceTotals, formatCurrency } from "@/components/pdf/invoice-types";
+import { useInvoiceEditorStore } from "@/lib/stores/invoice-editor-store";
+import { EditorTopBar } from "@/components/finance/editor/EditorTopBar";
+import { PropertyPanel } from "@/components/finance/editor/PropertyPanel";
+import { PaperCanvas } from "@/components/finance/editor/PaperCanvas";
+import { standardTemplate, ndisTemplate } from "@/components/finance/editor/templates";
+import type {
+  LineItemsContent,
+  NdisLineItemsContent,
+  ClientDetailsContent,
+  MetaContent,
+  NotesContent,
+  ProgressClaimContent,
+} from "@/components/finance/editor/types";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -49,301 +47,191 @@ function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_REGEX.test(value);
 }
 
-class PDFErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): { hasError: boolean } {
-    return { hasError: true };
-  }
-
-  componentDidUpdate(prevProps: { children: React.ReactNode }) {
-    if (prevProps.children !== this.props.children && this.state.hasError) {
-      this.setState({ hasError: false });
-    }
-  }
-
-  render() {
-    if (this.state.hasError) return this.props.fallback;
-    return this.props.children;
-  }
-}
-
-function PDFSkeleton() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-zinc-950/50">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 size={24} className="animate-spin text-zinc-500" />
-        <span className="text-xs text-zinc-600">Loading preview…</span>
-      </div>
-    </div>
-  );
-}
-
-const PDFViewer = dynamic(
-  () => import("@react-pdf/renderer").then((m) => m.PDFViewer),
-  { ssr: false, loading: () => <PDFSkeleton /> },
-);
-
-const InvoiceDocument = dynamic(
-  () => import("@/components/pdf/invoice-document").then((m) => ({ default: m.InvoiceDocument })),
-  { ssr: false, loading: () => <PDFSkeleton /> },
-);
-
-/* ── Config ───────────────────────────────────────────────── */
-
-type PaymentTerms = "due_receipt" | "net_7" | "net_14" | "net_30";
-
-const TERMS: { value: PaymentTerms; label: string; days: number }[] = [
-  { value: "due_receipt", label: "Due on Receipt", days: 0 },
-  { value: "net_7", label: "Net 7", days: 7 },
-  { value: "net_14", label: "Net 14", days: 14 },
-  { value: "net_30", label: "Net 30", days: 30 },
-];
-
-const DEFAULT_CATALOG = [
-  { name: "Service Call", price: 120 },
-  { name: "Labor Hour", price: 85 },
-  { name: "Materials", price: 0 },
-];
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
-function dateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
-}
-
-/* ── Page ─────────────────────────────────────────────────── */
-
-export default function InvoiceBuilderPage() {
+export default function InvoiceEditorPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { orgId } = useOrg();
   const { currentOrg } = useAuthStore();
-  const { t, isCare } = useIndustryLexicon();
+  const { isCare } = useIndustryLexicon();
   const storeClients = useClientsStore((s) => s.clients);
   const { createInvoiceServer } = useFinanceStore();
   const { addToast } = useToastStore();
   const hasValidOrgContext = isUuid(orgId);
 
-
-  /* Pre-fill from job if passed via query param */
-  const prefillJobId = searchParams.get("job_id");
   const prefillClientId = searchParams.get("client_id");
+  const prefillJobId = searchParams.get("job_id");
 
-  /* ── Form State ─────────────────────────────────────────── */
-  const [clientQuery, setClientQuery] = useState("");
-  const [selectedClient, setSelectedClient] = useState<{
-    id: string;
-    name: string;
-    email?: string | null;
-    address?: string | null;
-  } | null>(null);
-  const [showClientDD, setShowClientDD] = useState(false);
-  const clientRef = useRef<HTMLInputElement>(null);
-
-  const [terms, setTerms] = useState<PaymentTerms>("net_7");
-  const [showTerms, setShowTerms] = useState(false);
-  const [issueDate] = useState(new Date());
-  const [notes, setNotes] = useState("");
-  const [taxRate, setTaxRate] = useState(10);
-
-  const [discountType, setDiscountType] = useState<"percent" | "fixed" | null>(null);
-  const [discountValue, setDiscountValue] = useState(0);
-
-  const [lineItems, setLineItems] = useState<
-    { id: string; description: string; qty: number; rate: number; taxOverride: number | null }[]
-  >([]);
-
-  const [catalogQuery, setCatalogQuery] = useState("");
-  const [showCatalog, setShowCatalog] = useState(false);
-  const catalogRef = useRef<HTMLInputElement>(null);
+  const blocks = useInvoiceEditorStore((s) => s.blocks);
+  const setBlocks = useInvoiceEditorStore((s) => s.setBlocks);
+  const setWorkspace = useInvoiceEditorStore((s) => s.setWorkspace);
+  const setGlobalSettings = useInvoiceEditorStore((s) => s.setGlobalSettings);
+  const getTotals = useInvoiceEditorStore((s) => s.getTotals);
+  const updateBlockContent = useInvoiceEditorStore((s) => s.updateBlockContent);
+  const reset = useInvoiceEditorStore((s) => s.reset);
 
   const [saving, setSaving] = useState(false);
-  const [pdfReady, setPdfReady] = useState(false);
-  const [savedInvoice, setSavedInvoice] = useState<{ displayId: string; invoiceId: string; paymentLink: string } | null>(null);
+  const [savedInvoice, setSavedInvoice] = useState<{
+    displayId: string;
+    invoiceId: string;
+    paymentLink: string;
+  } | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
-  /* ── Dynamic Catalog ─────────────────────────────────────── */
-  const [catalogItems, setCatalogItems] = useState<Array<{ name: string; price: number }>>(DEFAULT_CATALOG);
+  const initializedRef = useRef(false);
 
+  // Initialize editor with template
   useEffect(() => {
-    async function loadCatalog() {
-      try {
-        const supabase = createClient();
-        const { data } = await (supabase as any)
-          .from("catalog_items")
-          .select("description, unit_price")
-          .eq("organization_id", orgId)
-          .eq("active", true)
-          .order("description")
-          .limit(100);
-        if (data && data.length > 0) {
-          setCatalogItems(data.map((item: any) => ({ name: item.description, price: Number(item.unit_price) || 0 })));
-        }
-      } catch {
-        // Fallback to DEFAULT_CATALOG if table doesn't exist or query fails
-      }
-    }
-    if (hasValidOrgContext) loadCatalog();
-  }, [orgId, hasValidOrgContext]);
+    if (initializedRef.current) return;
+    initializedRef.current = true;
 
-  /* ── Auto-select client from query ──────────────────────── */
+    reset();
+    const tpl = isCare ? ndisTemplate() : standardTemplate();
+    setBlocks(tpl);
+  }, [isCare, reset, setBlocks]);
+
+  // Sync workspace branding
   useEffect(() => {
-    if (prefillClientId && storeClients.length > 0 && !selectedClient) {
-      const c = storeClients.find((cl: any) => cl.id === prefillClientId);
-      if (c) setSelectedClient({ id: c.id, name: c.name, email: c.email, address: c.address });
-    }
-  }, [prefillClientId, storeClients, selectedClient]);
-
-  /* PDF preview becomes ready after initial render */
-  useEffect(() => {
-    const t = setTimeout(() => setPdfReady(true), 300);
-    return () => clearTimeout(t);
-  }, []);
-
-  /* ── Derived ────────────────────────────────────────────── */
-  const filteredClients = useMemo(
-    () =>
-      clientQuery.length > 0
-        ? storeClients.filter(
-            (c: any) =>
-              c.name?.toLowerCase().includes(clientQuery.toLowerCase()) ||
-              (c.email || "").toLowerCase().includes(clientQuery.toLowerCase()),
-          )
-        : [],
-    [clientQuery, storeClients],
-  );
-
-  const filteredCatalog = useMemo(
-    () =>
-      catalogQuery.length > 0
-        ? catalogItems.filter((ci) => ci.name.toLowerCase().includes(catalogQuery.toLowerCase()))
-        : catalogItems,
-    [catalogQuery, catalogItems],
-  );
-
-  const dueDate = addDays(issueDate, TERMS.find((t) => t.value === terms)?.days || 7);
-
-  const pdfLineItems: InvoiceLineItemData[] = useMemo(
-    () =>
-      lineItems.map((li, i) => ({
-        id: li.id,
-        description: li.description || "Untitled item",
-        quantity: li.qty || 0,
-        unit_price: li.rate || 0,
-        tax_rate_percent: li.taxOverride,
-        sort_order: i,
-      })),
-    [lineItems],
-  );
-
-  const totals = useMemo(
-    () => calcInvoiceTotals(pdfLineItems, taxRate, discountType, discountValue),
-    [pdfLineItems, taxRate, discountType, discountValue],
-  );
-
-  const invoiceData: InvoiceData = useMemo(
-    () => ({
-      display_id: "INV-DRAFT",
-      status: "draft",
-      issue_date: dateStr(issueDate),
-      due_date: dateStr(dueDate),
-      paid_date: null,
-      client_name: selectedClient?.name || "Select a client…",
-      client_email: selectedClient?.email || null,
-      client_address: selectedClient?.address || null,
-      line_items: pdfLineItems,
-      subtotal: totals.subtotal,
-      tax_rate: taxRate,
-      tax: totals.taxTotal,
-      discount_type: discountType,
-      discount_value: discountValue,
-      discount_total: totals.discountTotal,
-      total: totals.total,
-      notes: notes || null,
-      payment_link: null,
-    }),
-    [selectedClient, pdfLineItems, totals, issueDate, dueDate, taxRate, discountType, discountValue, notes],
-  );
-
-  const workspace: WorkspaceBrand = useMemo(
-    () => ({
-      name: currentOrg?.name || "Your Company",
+    if (!currentOrg) return;
+    setWorkspace({
+      name: currentOrg.name || "Your Company",
       logo_url: (currentOrg as any)?.brand_logo_url || (currentOrg as any)?.logo_url || null,
       brand_color_hex: (currentOrg as any)?.brand_color_hex || "#10B981",
       tax_id: (currentOrg as any)?.settings?.tax_id || null,
       address: (currentOrg as any)?.settings?.address || null,
       email: (currentOrg as any)?.settings?.email || null,
       phone: (currentOrg as any)?.settings?.phone || null,
-    }),
-    [currentOrg],
-  );
+    });
+    setGlobalSettings({
+      brandColor: (currentOrg as any)?.brand_color_hex || "#10B981",
+    });
+  }, [currentOrg, setWorkspace, setGlobalSettings]);
 
-  const isValid = !!selectedClient && lineItems.length > 0 && totals.total > 0 && hasValidOrgContext;
-  const canRenderPdf = !!selectedClient && lineItems.length > 0 && totals.total > 0;
+  // Auto-select client from query param
+  useEffect(() => {
+    if (!prefillClientId || storeClients.length === 0) return;
+    const cl = storeClients.find((c: any) => c.id === prefillClientId);
+    if (!cl) return;
+    const clientBlock = blocks.find((b) => b.type === "client_details");
+    if (clientBlock && !(clientBlock.content as ClientDetailsContent).clientId) {
+      updateBlockContent(clientBlock.id, {
+        clientId: cl.id,
+        clientName: cl.name,
+        clientEmail: cl.email || null,
+        clientAddress: cl.address || null,
+      });
+    }
+  }, [prefillClientId, storeClients, blocks, updateBlockContent]);
 
-  /* ── Actions ────────────────────────────────────────────── */
-  function addItem(desc: string, price: number) {
-    setLineItems((prev) => [
-      ...prev,
-      { id: `li-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, description: desc, qty: 1, rate: price, taxOverride: null },
-    ]);
-    setCatalogQuery("");
-    setShowCatalog(false);
-  }
+  // Validation: need client + at least one monetary block with items
+  const isValid = useCallback(() => {
+    if (!hasValidOrgContext) return false;
+    const clientBlock = blocks.find((b) => b.type === "client_details");
+    if (!clientBlock || !(clientBlock.content as ClientDetailsContent).clientId) return false;
 
-  function addCustomItem() {
-    if (!catalogQuery.trim()) return;
-    addItem(catalogQuery.trim(), 0);
-  }
+    const hasLineItems = blocks.some(
+      (b) =>
+        (b.type === "line_items" && (b.content as LineItemsContent).items.length > 0) ||
+        (b.type === "ndis_line_items" && (b.content as NdisLineItemsContent).items.length > 0) ||
+        (b.type === "progress_claim" &&
+          (b.content as ProgressClaimContent).milestones.some((m) => m.completed)),
+    );
+    if (!hasLineItems) return false;
 
-  function removeItem(id: string) {
-    setLineItems((prev) => prev.filter((li) => li.id !== id));
-  }
+    const totals = getTotals();
+    return totals.total > 0;
+  }, [blocks, hasValidOrgContext, getTotals]);
 
-  function updateItem(id: string, field: string, value: string | number | null) {
-    setLineItems((prev) => prev.map((li) => (li.id === id ? { ...li, [field]: value } : li)));
+  // Extract data from blocks for server persistence
+  function extractSavePayload(mode: "draft" | "send") {
+    const clientBlock = blocks.find((b) => b.type === "client_details");
+    const metaBlock = blocks.find((b) => b.type === "meta");
+    const notesBlock = blocks.find((b) => b.type === "notes");
+    const settings = useInvoiceEditorStore.getState().globalSettings;
+
+    const client = clientBlock?.content as ClientDetailsContent | undefined;
+    const meta = metaBlock?.content as MetaContent | undefined;
+    const notes = notesBlock?.content as NotesContent | undefined;
+
+    const lineItems: { description: string; quantity: number; unit_price: number }[] = [];
+    for (const b of blocks) {
+      if (b.type === "line_items") {
+        for (const item of (b.content as LineItemsContent).items) {
+          lineItems.push({
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+          });
+        }
+      } else if (b.type === "ndis_line_items") {
+        for (const item of (b.content as NdisLineItemsContent).items) {
+          lineItems.push({
+            description: `${item.supportItemCode} — ${item.description}`,
+            quantity: item.hours,
+            unit_price: item.rate,
+          });
+        }
+      }
+    }
+
+    return {
+      organization_id: orgId!,
+      client_id: client?.clientId || null,
+      client_name: client?.clientName || null,
+      client_email: client?.clientEmail || null,
+      client_address: client?.clientAddress || null,
+      job_id: prefillJobId || null,
+      status: mode === "send" ? ("sent" as const) : ("draft" as const),
+      issue_date: meta?.issueDate || new Date().toISOString().split("T")[0],
+      due_date: meta?.dueDate || undefined,
+      tax_rate: settings.taxRate,
+      notes: notes?.text || null,
+      metadata: {
+        blocks_json: blocks,
+        editor_version: 2,
+        global_settings: settings,
+      },
+      line_items: lineItems,
+    };
   }
 
   const handleSave = useCallback(
     async (mode: "draft" | "send") => {
-      if (!hasValidOrgContext) {
-        addToast("Workspace context not loaded. Please refresh the page.", undefined, "error");
-        return;
-      }
-      if (!isValid || saving) return;
+      if (!hasValidOrgContext || !isValid() || saving) return;
       setSaving(true);
       try {
-        const result = await createInvoiceServer({
-          organization_id: orgId,
-          client_id: selectedClient!.id,
-          client_name: selectedClient!.name,
-          client_email: selectedClient!.email || null,
-          client_address: selectedClient!.address || null,
-          job_id: prefillJobId || null,
-          status: mode === "send" ? "sent" : "draft",
-          issue_date: dateStr(issueDate),
-          due_date: dateStr(dueDate),
-          tax_rate: taxRate,
-          notes: notes || null,
-          line_items: lineItems.map((li) => ({
-            description: li.description,
-            quantity: li.qty,
-            unit_price: li.rate,
-          })),
-        });
+        const payload = extractSavePayload(mode);
+        const result = await createInvoiceServer(payload);
         if (result.success && result.invoiceId) {
           const payLink = `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || ""}/pay/${result.invoiceId}`;
+
+          if (mode === "send" && payload.client_email) {
+            const totals = getTotals();
+            const emailItems = payload.line_items.map((li) => ({
+              description: li.description,
+              quantity: li.quantity,
+              rate: li.unit_price,
+              total: Math.round(li.quantity * li.unit_price * 100) / 100,
+            }));
+            dispatchInvoiceEmail({
+              invoiceId: result.invoiceId,
+              displayId: result.displayId || "Invoice",
+              clientEmail: payload.client_email,
+              clientName: payload.client_name || "",
+              orgName: useInvoiceEditorStore.getState().workspace.name,
+              orgLogo: useInvoiceEditorStore.getState().workspace.logo_url || undefined,
+              issueDate: payload.issue_date || new Date().toISOString().split("T")[0],
+              dueDate: payload.due_date || "",
+              lineItems: emailItems,
+              subtotal: totals.subtotal,
+              tax: totals.tax,
+              total: totals.total,
+              paymentUrl: payLink,
+              currency: "AUD",
+            }).catch(() => {});
+          }
+
           setSavedInvoice({
             displayId: result.displayId || "Invoice",
             invoiceId: result.invoiceId,
@@ -354,14 +242,41 @@ export default function InvoiceBuilderPage() {
           addToast(mode === "send" ? "Invoice sent" : "Invoice saved as draft");
           router.push("/dashboard/finance");
         } else {
-          addToast(`Error: ${result.error || "Failed to save"}`);
+          addToast(`Error: ${result.error || "Failed to save"}`, undefined, "error");
         }
       } finally {
         setSaving(false);
       }
     },
-    [hasValidOrgContext, isValid, saving, orgId, selectedClient, prefillJobId, issueDate, dueDate, taxRate, notes, lineItems, createInvoiceServer, addToast, router],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hasValidOrgContext, saving, orgId, createInvoiceServer, addToast, router],
   );
+
+  const handlePreviewPdf = useCallback(async () => {
+    if (!isValid() || pdfGenerating) return;
+    setPdfGenerating(true);
+    try {
+      const settings = useInvoiceEditorStore.getState().globalSettings;
+      const workspace = useInvoiceEditorStore.getState().workspace;
+
+      const res = await fetch("/api/invoices/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocks, globalSettings: settings, workspace }),
+      });
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      setPdfPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch {
+      addToast("Failed to generate PDF preview", undefined, "error");
+    } finally {
+      setPdfGenerating(false);
+    }
+  }, [blocks, pdfGenerating, isValid, addToast]);
 
   function handleCopyLink() {
     if (!savedInvoice) return;
@@ -371,8 +286,7 @@ export default function InvoiceBuilderPage() {
     setTimeout(() => setLinkCopied(false), 2000);
   }
 
-  /* ── Render ─────────────────────────────────────────────── */
-
+  // Success screen
   if (savedInvoice) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-[var(--surface-1)] px-6">
@@ -398,7 +312,7 @@ export default function InvoiceBuilderPage() {
             <label className="mb-2 block text-left font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
               Payment Link
             </label>
-              <div className="flex items-center gap-2 rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--background)] px-3 py-2.5">
+            <div className="flex items-center gap-2 rounded-[var(--radius-input)] border border-[var(--border-base)] bg-[var(--background)] px-3 py-2.5">
               <Link2 size={13} className="shrink-0 text-zinc-600" />
               <span className="min-w-0 flex-1 truncate text-left text-[12px] text-zinc-400">
                 {savedInvoice.paymentLink}
@@ -407,7 +321,11 @@ export default function InvoiceBuilderPage() {
                 onClick={handleCopyLink}
                 className="shrink-0 rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
               >
-                {linkCopied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                {linkCopied ? (
+                  <Check size={13} className="text-emerald-400" />
+                ) : (
+                  <Copy size={13} />
+                )}
               </button>
             </div>
             <button
@@ -428,7 +346,11 @@ export default function InvoiceBuilderPage() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push(`/dashboard/finance/invoices/${savedInvoice.displayId}`)}
+              onClick={() =>
+                router.push(
+                  `/dashboard/finance/invoices/${savedInvoice.displayId}`,
+                )
+              }
               className="flex-1 rounded-lg border border-[var(--border-base)] py-2.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200"
             >
               View Invoice
@@ -447,414 +369,57 @@ export default function InvoiceBuilderPage() {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-[var(--surface-1)]">
-      {/* Noise texture */}
       <div className="pointer-events-none absolute inset-0 z-0 bg-noise opacity-[var(--noise-opacity)]" />
 
-      {/* ── Top Bar ─────────────────────────────────────────── */}
-      <div className="relative z-10 flex h-14 shrink-0 items-center justify-between border-b border-[var(--border-base)] px-5">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/dashboard/finance")}
-            className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <h1 className="text-sm font-semibold text-zinc-200">{t("New Invoice")}</h1>
-            <p className="text-[10px] text-zinc-600">{isCare ? "NDIS Claim Builder" : "WYSIWYG Builder"}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            disabled={!isValid || saving || !hasValidOrgContext}
-            onClick={() => handleSave("draft")}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--border-base)] px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:bg-white/[0.04] hover:text-zinc-200 disabled:opacity-40"
-          >
-            <Save size={12} />
-            Save Draft
-          </button>
-          <button
-            disabled={!isValid || saving || !hasValidOrgContext}
-            onClick={() => handleSave("send")}
-            className="flex items-center gap-1.5 rounded-lg bg-white px-4 py-1.5 text-[11px] font-semibold text-black transition-all hover:bg-zinc-200 disabled:opacity-40"
-          >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-            {t("Send Invoice")}
-          </button>
-        </div>
-      </div>
+      <EditorTopBar
+        onSave={handleSave}
+        onPreviewPdf={handlePreviewPdf}
+        saving={saving}
+        isValid={isValid()}
+      />
 
-      {/* ── Split Pane ──────────────────────────────────────── */}
       <div className="relative z-10 flex flex-1 overflow-hidden">
-        {/* ── Left: Form ────────────────────────────────────── */}
-        <div className="w-[480px] shrink-0 overflow-y-auto border-r border-[var(--border-base)] p-5">
-          {/* Client Selector */}
-          <div className="mb-6">
-            <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              {t("Bill To")}
-            </label>
-            {isCare && (
-              <p className="mb-2 flex items-center gap-1.5 rounded-md bg-emerald-500/5 border border-emerald-500/10 px-2.5 py-1.5 text-[10px] text-emerald-400/80">
-                <span className="shrink-0">💡</span>
-                NDIS support items can be selected from the catalogue
-              </p>
-            )}
-            {selectedClient ? (
-              <div className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--border-base)] bg-white/[0.02] px-3 py-2.5">
-                <div>
-                  <div className="text-sm font-medium text-zinc-200">{selectedClient.name}</div>
-                  {selectedClient.email && (
-                    <div className="text-[10px] text-zinc-600">{selectedClient.email}</div>
-                  )}
-                </div>
-                <button onClick={() => setSelectedClient(null)} className="text-zinc-600 hover:text-zinc-400">
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input
-                  ref={clientRef}
-                  value={clientQuery}
-                  onChange={(e) => {
-                    setClientQuery(e.target.value);
-                    setShowClientDD(true);
-                  }}
-                  onFocus={() => setShowClientDD(true)}
-                  placeholder={isCare ? "Search participants…" : "Search clients…"}
-                  className="w-full rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.02] py-2.5 pl-9 pr-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
-                />
-                <AnimatePresence>
-                  {showClientDD && filteredClients.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      className="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
-                    >
-                      {filteredClients.map((c: any) => (
-                        <button
-                          key={c.id}
-                          onClick={() => {
-                            setSelectedClient({ id: c.id, name: c.name, email: c.email, address: c.address });
-                            setClientQuery("");
-                            setShowClientDD(false);
-                          }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-300 transition-colors hover:bg-white/[0.04]"
-                        >
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-400">
-                            {c.name?.[0] || "?"}
-                          </div>
-                          <div>
-                            <div className="text-xs font-medium">{c.name}</div>
-                            {c.email && <div className="text-[10px] text-zinc-600">{c.email}</div>}
-                          </div>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            )}
-          </div>
-
-          {/* Dates & Terms */}
-          <div className="mb-6 grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-                Issue Date
-              </label>
-              <div className="rounded-[var(--radius-input)] border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 font-mono text-xs tabular-nums text-zinc-400">
-                {issueDate.toLocaleDateString("en-AU")}
-              </div>
-            </div>
-            <div className="relative">
-              <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-                Payment Terms
-              </label>
-              <button
-                onClick={() => setShowTerms(!showTerms)}
-                className="flex w-full items-center justify-between rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300"
-              >
-                {TERMS.find((t) => t.value === terms)?.label}
-                <ChevronDown size={12} className="text-zinc-600" />
-              </button>
-              <AnimatePresence>
-                {showTerms && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
-                  >
-                    {TERMS.map((t) => (
-                      <button
-                        key={t.value}
-                        onClick={() => {
-                          setTerms(t.value);
-                          setShowTerms(false);
-                        }}
-                        className="flex w-full items-center justify-between px-3 py-2 text-xs text-zinc-300 hover:bg-white/[0.04]"
-                      >
-                        {t.label}
-                        {t.value === terms && <Check size={12} className="text-emerald-400" />}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* Tax Rate */}
-          <div className="mb-6">
-            <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              Tax Rate (%)
-            </label>
-            <input
-              type="number"
-              value={taxRate}
-              onChange={(e) => setTaxRate(Math.max(0, Number(e.target.value)))}
-              className="w-24 rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
-            />
-          </div>
-
-          {/* ── Line Items ──────────────────────────────────── */}
-          <div className="mb-4">
-            <label className="mb-2 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              {t("Line Items")}
-            </label>
-            <div className="space-y-2">
-              {lineItems.map((li) => (
-                <motion.div
-                  key={li.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="group rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-3"
-                >
-                  <div className="flex items-start gap-2">
-                    <GripVertical size={14} className="mt-1 shrink-0 cursor-grab text-zinc-700" />
-                    <div className="flex-1 space-y-2">
-                      <input
-                        value={li.description}
-                        onChange={(e) => updateItem(li.id, "description", e.target.value)}
-                        placeholder="Description"
-                        className="w-full bg-transparent text-sm text-zinc-200 outline-none placeholder:text-zinc-700"
-                      />
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-zinc-600">Qty</span>
-                          <input
-                            type="number"
-                            value={li.qty}
-                            onChange={(e) => updateItem(li.id, "qty", Math.max(0, Number(e.target.value)))}
-                            className="w-16 rounded border border-[var(--border-base)] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-zinc-600">$</span>
-                          <input
-                            type="number"
-                            value={li.rate}
-                            onChange={(e) => updateItem(li.id, "rate", Math.max(0, Number(e.target.value)))}
-                            className="w-24 rounded border border-[var(--border-base)] bg-transparent px-2 py-1 font-mono text-xs text-zinc-300 outline-none focus:border-emerald-500/30"
-                          />
-                        </div>
-                        <div className="ml-auto font-mono text-xs font-semibold tabular-nums text-zinc-300">
-                          {formatCurrency(Math.round(li.qty * li.rate * 100) / 100)}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeItem(li.id)}
-                      className="shrink-0 rounded p-1 text-zinc-700 opacity-0 transition-all hover:bg-red-500/10 hover:text-red-400 group-hover:opacity-100"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          {/* Add Item */}
-          <div className="relative mb-6">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                <input
-                  ref={catalogRef}
-                  value={catalogQuery}
-                  onChange={(e) => {
-                    setCatalogQuery(e.target.value);
-                    setShowCatalog(true);
-                  }}
-                  onFocus={() => setShowCatalog(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") addCustomItem();
-                  }}
-                  placeholder={isCare ? "Add NDIS support item or type custom…" : "Add item from catalog or type custom…"}
-                  className="w-full rounded-lg border border-dashed border-[var(--border-active)] bg-transparent py-2 pl-9 pr-3 text-xs text-zinc-400 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
-                />
-              </div>
-              <button
-                onClick={addCustomItem}
-                className="shrink-0 rounded-lg border border-[var(--border-base)] p-2 text-zinc-600 transition-colors hover:bg-white/[0.04] hover:text-zinc-300"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
-            <AnimatePresence>
-              {showCatalog && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-lg border border-[var(--border-active)] bg-zinc-900 shadow-2xl"
-                >
-                  {filteredCatalog.map((ci) => (
-                    <button
-                      key={ci.name}
-                      onClick={() => addItem(ci.name, ci.price)}
-                      className="flex w-full items-center justify-between px-3 py-2 text-xs text-zinc-300 transition-colors hover:bg-white/[0.04]"
-                    >
-                      <span>{ci.name}</span>
-                      <span className="font-mono tabular-nums text-zinc-500">{formatCurrency(ci.price)}</span>
-                    </button>
-                  ))}
-                  {filteredCatalog.length === 0 && catalogQuery && (
-                    <div className="px-3 py-2 text-xs text-zinc-600">
-                      Press Enter to add &quot;{catalogQuery}&quot; as custom item
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Discount */}
-          <div className="mb-6">
-            <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              Discount
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDiscountType(discountType === "percent" ? null : "percent")}
-                className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[10px] font-medium transition-colors ${
-                  discountType === "percent"
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-[var(--border-base)] text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                <Percent size={11} /> Percentage
-              </button>
-              <button
-                onClick={() => setDiscountType(discountType === "fixed" ? null : "fixed")}
-                className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-[10px] font-medium transition-colors ${
-                  discountType === "fixed"
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-[var(--border-base)] text-zinc-500 hover:text-zinc-300"
-                }`}
-              >
-                <DollarSign size={11} /> Fixed Amount
-              </button>
-              {discountType && (
-                <input
-                  type="number"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(Math.max(0, Number(e.target.value)))}
-                  placeholder={discountType === "percent" ? "%" : "$"}
-                  className="w-20 rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-2 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500/30"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="mb-6">
-            <label className="mb-1.5 block font-mono text-[9px] uppercase tracking-[2px] text-zinc-600">
-              Notes
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              placeholder="Payment instructions, warranty info, thank-you message…"
-              className="w-full resize-none rounded-lg border border-[var(--border-base)] bg-white/[0.02] px-3 py-2 text-xs text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-emerald-500/30"
-            />
-          </div>
-
-          {/* Totals Summary */}
-          <div className="rounded-lg border border-[var(--border-base)] bg-white/[0.02] p-4">
-            <div className="flex items-center justify-between py-1">
-              <span className="text-xs text-zinc-500">Subtotal</span>
-              <span className="font-mono text-xs tabular-nums text-zinc-300">{formatCurrency(totals.subtotal)}</span>
-            </div>
-            {totals.discountTotal > 0 && (
-              <div className="flex items-center justify-between py-1">
-                <span className="text-xs text-zinc-500">
-                  Discount {discountType === "percent" ? `(${discountValue}%)` : ""}
-                </span>
-                <span className="font-mono text-xs tabular-nums text-red-400">-{formatCurrency(totals.discountTotal)}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between py-1">
-              <span className="text-xs text-zinc-500">GST ({taxRate}%)</span>
-              <span className="font-mono text-xs tabular-nums text-zinc-300">{formatCurrency(totals.taxTotal)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between border-t border-[var(--border-base)] pt-3">
-              <span className="font-mono text-[9px] font-bold tracking-widest text-zinc-200 uppercase">Total</span>
-              <span className="font-mono text-lg font-bold tabular-nums text-emerald-400">{formatCurrency(totals.total)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right: PDF Preview ────────────────────────────── */}
-        <div className="flex flex-1 flex-col overflow-hidden bg-[var(--background)]">
-          <div className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--border-base)] px-4">
-            <Eye size={13} className="text-zinc-600" />
-            <span className="font-mono text-[9px] font-medium tracking-widest text-zinc-600 uppercase">
-              Live Preview
-            </span>
-          </div>
-          <div className="flex-1 overflow-auto p-4">
-            {pdfReady ? (
-              canRenderPdf ? (
-                <PDFErrorBoundary
-                  fallback={
-                    <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-[var(--border-base)] bg-zinc-950/50 p-6 text-center">
-                      <div>
-                        <p className="text-sm text-zinc-300">Preview unavailable</p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          Complete the invoice details to generate preview.
-                        </p>
-                      </div>
-                    </div>
-                  }
-                >
-                  <div className="rounded-lg bg-zinc-900/50" style={{ height: "100%", minHeight: 720 }}>
-                    <PDFViewer width="100%" height="100%" showToolbar={false}>
-                      <InvoiceDocument data={invoiceData} workspace={workspace} />
-                    </PDFViewer>
-                  </div>
-                </PDFErrorBoundary>
-              ) : (
-                <div className="flex h-full min-h-[720px] items-center justify-center rounded-lg border border-[var(--border-base)] bg-zinc-950/50 p-6 text-center">
-                  <div>
-                    <p className="text-sm text-zinc-300">Preview unavailable</p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Select a client and add at least one line item to generate preview.
-                    </p>
-                  </div>
-                </div>
-              )
-            ) : null}
-          </div>
-        </div>
+        <PropertyPanel />
+        <PaperCanvas />
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreviewUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="relative w-[90vw] max-w-4xl h-[85vh] rounded-xl border border-[var(--border-base)] bg-zinc-900 overflow-hidden">
+            <div className="flex h-10 items-center justify-between border-b border-[var(--border-base)] px-4">
+              <span className="font-mono text-[9px] font-medium tracking-widest text-zinc-500 uppercase">
+                PDF Preview
+              </span>
+              <button
+                onClick={() => {
+                  if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+                  setPdfPreviewUrl(null);
+                }}
+                className="text-[11px] text-zinc-400 hover:text-zinc-200"
+              >
+                Close
+              </button>
+            </div>
+            <iframe
+              src={`${pdfPreviewUrl}#toolbar=0&navpanes=0`}
+              title="PDF Preview"
+              width="100%"
+              height="100%"
+              style={{ border: "none" }}
+            />
+          </div>
+        </div>
+      )}
+
+      {pdfGenerating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-3 border border-[var(--border-base)]">
+            <Loader2 size={16} className="animate-spin text-emerald-400" />
+            <span className="text-sm text-zinc-300">Generating PDF…</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

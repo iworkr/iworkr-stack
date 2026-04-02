@@ -1,3 +1,10 @@
+/**
+ * @module e2e/aegis/rbac-matrix.spec.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { test, expect } from "@playwright/test";
 
 /**

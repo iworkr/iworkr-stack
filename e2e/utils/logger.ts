@@ -1,3 +1,10 @@
+/**
+ * @module e2e/utils/logger.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import type { Page } from "@playwright/test";
 
 type Severity = "info" | "step" | "pass" | "fail" | "warn" | "error";

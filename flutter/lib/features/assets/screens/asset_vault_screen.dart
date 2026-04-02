@@ -1,3 +1,7 @@
+// @module lib/features/assets/screens/asset_vault_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';

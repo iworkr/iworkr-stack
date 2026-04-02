@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/branches/page.tsx
+ * @status STABLE
+ * @description Route — settings/branches
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

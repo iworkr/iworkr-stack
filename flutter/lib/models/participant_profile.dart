@@ -1,3 +1,7 @@
+// @module lib/models/participant_profile.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Participant profile model — maps to public.participant_profiles
 /// Project Nightingale: Care sector extension of client data
 class ParticipantProfile {

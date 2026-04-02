@@ -1,3 +1,7 @@
+// @module lib/core/theme/alabaster_theme.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 
 /// The Alabaster Interface — the crisp light-mode counterpart to Obsidian.

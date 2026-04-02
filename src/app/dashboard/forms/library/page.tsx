@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/forms/library/page.tsx
+ * @status STABLE
+ * @description Route — dashboard/forms/library
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";

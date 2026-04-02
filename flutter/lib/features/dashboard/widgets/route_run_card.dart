@@ -1,3 +1,7 @@
+// @module lib/features/dashboard/widgets/route_run_card.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,9 @@
+/**
+ * @module tests/edge-functions/vitest.edge.config.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
 import { defineConfig } from "vitest/config";
 import path from "path";
 

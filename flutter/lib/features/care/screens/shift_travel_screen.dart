@@ -1,3 +1,7 @@
+// @module lib/features/care/screens/shift_travel_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:math';
 

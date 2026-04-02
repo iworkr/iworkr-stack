@@ -405,6 +405,8 @@ describe("getStripePriceId", () => {
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      siteBuilder: false,
+      customDomain: false,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,

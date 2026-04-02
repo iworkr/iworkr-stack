@@ -94,6 +94,16 @@ function mapServerJob(sj: any): Job {
   };
 }
 
+function dedupeByDbId(jobs: Job[]): Job[] {
+  const seen = new Set<string>();
+  return jobs.filter((j) => {
+    const key = j.dbId ?? j.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function getInitials(name: string): string {
   if (!name) return "??";
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -301,7 +311,7 @@ export const useJobsStore = create<JobsState>()(
       // Anti-slingshot: verify orgId is still current before writing results
       if (get().orgId !== orgId) return;
       if (!error) {
-        const mapped = (data || []).map(mapServerJob);
+        const mapped = dedupeByDbId((data || []).map(mapServerJob));
         set({ jobs: mapped, loaded: true, loading: false, _stale: false, _lastFetchedAt: Date.now() });
       } else {
         set({ loaded: true, loading: false });
@@ -317,7 +327,7 @@ export const useJobsStore = create<JobsState>()(
     try {
       const { data, error } = await getJobs(orgId);
       if (!error) {
-        const mapped = (data || []).map(mapServerJob);
+        const mapped = dedupeByDbId((data || []).map(mapServerJob));
         set({ jobs: mapped, _lastFetchedAt: Date.now(), _stale: false });
       }
     } catch {
@@ -340,6 +350,12 @@ export const useJobsStore = create<JobsState>()(
     }),
     {
       name: "iworkr-jobs",
+      version: 2,
+      migrate: () => ({
+        jobs: [],
+        orgId: null,
+        _lastFetchedAt: null,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state && state.jobs && state.jobs.length > 0) {
           state.loaded = true;

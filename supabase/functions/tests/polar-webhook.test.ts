@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/polar-webhook.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the polar-webhook edge function.
  * Tests Polar.sh subscription webhook handling.
  *

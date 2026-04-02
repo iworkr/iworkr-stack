@@ -2,11 +2,15 @@
  * @middleware SupabaseSessionMiddleware
  * @status COMPLETE
  * @description Edge RBAC middleware with JWT-based role checks and session refresh
- * @lastAudit 2026-03-22
+ * @risk P0 — If NEXT_PUBLIC_SUPABASE_URL or anon key empty, returns next() without auth (fail-open). Misconfigured deploy = no session enforcement.
+ * @risk P1 — Bootstrap super-admin emails: `src/lib/super-admin.ts` + env `SUPER_ADMIN_EMAILS`.
+ * @auditNote INCOMPLETE: fail-open when env missing — production should 503 or redirect to setup (see launch audit).
+ * @lastAudit 2026-03-28
  */
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { isSuperAdminEmail } from "@/lib/super-admin";
 import type { Database } from "./types";
 
 // ═══════════════════════════════════════════════════════════════
@@ -31,9 +35,6 @@ const RBAC_ROUTES: Record<string, string[]> = {
 
 /** Roles that belong in the /portal experience, not /dashboard */
 const PORTAL_ROLES = ["participant", "carer"];
-
-/** Emails that are always treated as super admins (bootstrap fallback) */
-const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -95,7 +96,7 @@ export async function updateSession(request: NextRequest) {
 
       if (profileError || adminProfile === null) {
         // Column doesn't exist or no profile — fallback to email allowlist
-        if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+        if (!isSuperAdminEmail(user.email)) {
           const url = request.nextUrl.clone();
           url.pathname = "/not-found";
           return NextResponse.rewrite(url);
@@ -110,7 +111,7 @@ export async function updateSession(request: NextRequest) {
       }
     } catch {
       // If anything fails, fall back to email check
-      if (!SUPER_ADMIN_EMAILS.includes(user.email || "")) {
+      if (!isSuperAdminEmail(user.email)) {
         const url = request.nextUrl.clone();
         url.pathname = "/not-found";
         return NextResponse.rewrite(url);

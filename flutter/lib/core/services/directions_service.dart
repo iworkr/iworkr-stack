@@ -1,3 +1,7 @@
+// @module lib/core/services/directions_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';

@@ -517,7 +517,7 @@ export default function PayrollExportPage() {
           <div className="text-center py-20">
             <BarChart3 className="w-8 h-8 text-zinc-800 mx-auto mb-3" />
             <p className="text-sm text-zinc-500">No processed timesheets for this pay period.</p>
-            <p className="text-xs text-zinc-700 mt-1">Click "Run All SCHADS" to process approved timesheets.</p>
+            <p className="text-xs text-zinc-700 mt-1">Click &ldquo;Run All SCHADS&rdquo; to process approved timesheets.</p>
           </div>
         ) : (
           batches.map((batch) => (

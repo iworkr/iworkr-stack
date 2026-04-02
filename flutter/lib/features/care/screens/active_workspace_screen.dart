@@ -1,3 +1,7 @@
+// @module lib/features/care/screens/active_workspace_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

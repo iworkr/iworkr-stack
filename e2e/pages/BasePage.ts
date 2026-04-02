@@ -1,3 +1,10 @@
+/**
+ * @module e2e/pages/BasePage.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { type Page, type Locator, expect } from "@playwright/test";
 import { logger } from "../utils/logger";
 

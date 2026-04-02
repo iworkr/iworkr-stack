@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/care/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/care
+ * @lastReview 2026-03-28
+ */
 export default function Loading() {
   return (
     <div className="h-full overflow-auto bg-[var(--background)] p-6">

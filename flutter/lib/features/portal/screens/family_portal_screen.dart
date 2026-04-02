@@ -1,3 +1,7 @@
+// @module lib/features/portal/screens/family_portal_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

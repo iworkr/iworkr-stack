@@ -1,4 +1,7 @@
 /**
+ * @module e2e/jobs.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Jobs Module — Comprehensive E2E Audit
  * ============================================================

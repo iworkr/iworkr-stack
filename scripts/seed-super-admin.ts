@@ -1,4 +1,10 @@
 /**
+ * @module scripts/seed-super-admin.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
+/**
  * Seed Script: Super Admin Account
  * 
  * Creates or updates the root super admin account.

@@ -1,3 +1,8 @@
+// @module core/services/supabase_service
+// @status STABLE — production Supabase URL/anon defaults when dart-defines empty
+// @description Singleton Supabase + deep links; compile-time overrides via --dart-define.
+// @risk P2 — Embedded anon key is public by design; fixed project coupling — use defines for staging; rotate keys in Supabase if leaked.
+// @lastReview 2026-03-28
 import 'dart:io';
 
 import 'package:app_links/app_links.dart';

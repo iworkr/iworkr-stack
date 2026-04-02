@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/oracle-yield.ts
+ * @status STABLE
+ * @description Zod / shared schemas — oracle-yield
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 /* ── Yield Profile Schema ────────────────────────────── */

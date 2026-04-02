@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/connected/page.tsx
+ * @status STABLE
+ * @description Route — settings/connected
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useAuthStore } from "@/lib/auth-store";

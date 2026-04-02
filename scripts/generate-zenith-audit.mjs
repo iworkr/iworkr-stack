@@ -1,3 +1,7 @@
+// @module scripts/generate-zenith-audit.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const now = new Date();

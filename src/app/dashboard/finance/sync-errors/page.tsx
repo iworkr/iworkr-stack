@@ -17,6 +17,7 @@ import {
   Settings,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { getSyncErrors, retrySyncLog, type SyncError } from "@/app/actions/ledger-sync";
 import { useToastStore } from "@/components/app/action-toast";
 import { useOrg } from "@/lib/hooks/use-org";
@@ -123,13 +124,13 @@ export default function SyncErrorsPage() {
             {errors.filter((e) => e.entity_type === "PAYROLL").length}
           </span>
         </div>
-        <a
+        <Link
           href="/dashboard/settings/integrations"
           className="ml-auto flex items-center gap-2 px-3 py-1.5 border border-white/8 rounded-lg text-[11px] text-zinc-400 hover:text-white hover:border-white/20 transition-colors"
         >
           <Settings size={12} />
           Fix Mappings
-        </a>
+        </Link>
       </div>
 
       {/* Grid Header */}
@@ -240,13 +241,13 @@ export default function SyncErrorsPage() {
 
                 {/* Actions */}
                 <div className="w-[160px] flex items-center gap-2">
-                  <a
+                  <Link
                     href="/dashboard/settings/integrations"
                     className="text-[10px] px-2.5 py-1.5 rounded-lg border border-white/8 text-zinc-400 hover:text-white hover:border-white/20 transition-colors flex items-center gap-1"
                   >
                     <Settings size={10} />
                     Fix Mapping
-                  </a>
+                  </Link>
                   <button
                     onClick={() => handleRetry(err.id)}
                     disabled={isRetrying || isPending}

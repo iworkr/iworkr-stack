@@ -1,3 +1,10 @@
+/**
+ * @module e2e/utils/constants.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 /** Golden User (Admin) — Project Panopticon / full coverage runs */
 export const GOLDEN_EMAIL = "theo.caleb.lewis@gmail.com";
 export const GOLDEN_PASSWORD = "lowerUPPER#123";

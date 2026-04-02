@@ -1,3 +1,7 @@
+// @module lib/features/time_attendance/services/spatial_gate_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:geolocator/geolocator.dart';
 
 import 'location_service.dart';

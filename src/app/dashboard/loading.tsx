@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard
+ * @lastReview 2026-03-28
+ */
 export default function DashboardLoading() {
   return (
     <div className="h-full p-6">

@@ -1,4 +1,7 @@
 /**
+ * @module e2e/comprehensive/regression.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Regression Tests
  * ============================================================

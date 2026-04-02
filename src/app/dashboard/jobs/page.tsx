@@ -598,7 +598,7 @@ export default function JobsPage() {
 
             return (
               <motion.div
-                key={job.dbId ?? job.id}
+                key={job.dbId || `${job.id}-${i}`}
                 layout
                 data-job-row
                 data-selected={isSelected}

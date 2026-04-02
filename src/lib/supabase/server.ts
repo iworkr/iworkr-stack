@@ -2,7 +2,8 @@
  * @module SupabaseServer
  * @status COMPLETE
  * @description Server-side Supabase client factory using cookie-based auth
- * @lastAudit 2026-03-22
+ * @risk P2 — setAll swallows cookie write errors in Server Component contexts; session refresh can fail silently.
+ * @lastAudit 2026-03-28
  */
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";

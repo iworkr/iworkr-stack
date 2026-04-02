@@ -1,6 +1,6 @@
 # Integrations Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-25T15:56:48.889Z
+> **Generated**: 2026-03-26T07:48:34.474Z
 > **Module**: Integrations (`/dashboard/integrations`)
 > **Total Findings**: 0
 > **Test Suites**: 16

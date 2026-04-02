@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/document-forge/block-preview.tsx
+ * @status STABLE
+ * @description Forms & document forge — block-preview
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import React from "react";

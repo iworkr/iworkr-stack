@@ -1,3 +1,7 @@
+// @module lib/core/widgets/glass_card.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iworkr_mobile/core/theme/iworkr_colors.dart';

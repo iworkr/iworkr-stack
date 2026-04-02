@@ -187,7 +187,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         filter: `organization_id=eq.${orgId}`,
       }, () => {
         // Only update if we're still on the same org
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useScheduleStore.getState().handleRealtimeUpdate();
         }
       })
@@ -196,7 +196,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "jobs",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useScheduleStore.getState().handleRealtimeUpdate();
         }
       })
@@ -205,7 +205,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "invoices",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useFinanceStore.getState().handleRealtimeUpdate();
         }
       })
@@ -214,7 +214,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "assets",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useAssetsStore.getState().handleRealtimeUpdate();
         }
       })
@@ -222,7 +222,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "inventory_items",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useAssetsStore.getState().handleRealtimeUpdate();
         }
       })
@@ -231,7 +231,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "organization_members",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useTeamStore.getState().handleRealtimeUpdate();
         }
       })
@@ -239,7 +239,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "organization_roles",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useTeamStore.getState().handleRealtimeUpdate();
         }
       })
@@ -248,7 +248,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "form_submissions",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useFormsStore.getState().handleRealtimeUpdate();
         }
       })
@@ -257,7 +257,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "automation_flows",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useAutomationsStore.getState().handleRealtimeUpdate();
         }
       })
@@ -266,7 +266,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "*", schema: "public", table: "integrations",
         filter: `organization_id=eq.${orgId}`,
       }, () => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useIntegrationsStore.getState().handleRealtimeUpdate();
         }
       })
@@ -275,7 +275,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "INSERT", schema: "public", table: "worker_credentials",
         filter: `organization_id=eq.${orgId}`,
       }, (payload) => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useCredentialsStore.getState().handleRealtimeInsert(payload.new as unknown as import("@/lib/credentials-store").WorkerCredential);
         }
       })
@@ -283,7 +283,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "UPDATE", schema: "public", table: "worker_credentials",
         filter: `organization_id=eq.${orgId}`,
       }, (payload) => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useCredentialsStore.getState().handleRealtimeUpdate(payload.new as unknown as import("@/lib/credentials-store").WorkerCredential);
         }
       })
@@ -291,7 +291,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         event: "DELETE", schema: "public", table: "worker_credentials",
         filter: `organization_id=eq.${orgId}`,
       }, (payload) => {
-        if (useOrg_getOrgId() === subscriptionOrgId) {
+        if (getCurrentOrgIdFromAuthStore() === subscriptionOrgId) {
           useCredentialsStore.getState().handleRealtimeDelete((payload.old as unknown as { id: string }).id);
         }
       })
@@ -304,6 +304,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 }
 
 /** Quick read of the current orgId from auth store (non-hook, for realtime callbacks) */
-function useOrg_getOrgId(): string | null {
+function getCurrentOrgIdFromAuthStore(): string | null {
   return useAuthStore.getState().currentOrg?.id ?? null;
 }

@@ -1,3 +1,7 @@
+// @module lib/core/services/care_shift_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

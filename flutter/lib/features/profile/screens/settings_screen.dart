@@ -1,3 +1,7 @@
+// @module lib/features/profile/screens/settings_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';

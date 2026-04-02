@@ -7,8 +7,8 @@
  */
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { verifySuperAdminServer } from "@/lib/super-admin-server";
 
 export type MobileTelemetryRow = {
   id: string;
@@ -47,49 +47,6 @@ const EMPTY: MobileStatsResult = {
   versions: [],
   sessions: [],
 };
-
-async function verifySuperAdmin() {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const admin = createAdminSupabaseClient();
-    const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
-
-    try {
-      const { data: profile, error: profileError } = await admin
-        .from("profiles")
-        .select("id, email, is_super_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-          return { id: user.id, email: user.email || "" };
-        }
-        return null;
-      }
-
-      if (
-        profile?.is_super_admin ||
-        SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")
-      ) {
-        return { id: user.id, email: profile?.email || user.email || "" };
-      }
-      return null;
-    } catch {
-      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-        return { id: user.id, email: user.email || "" };
-      }
-      return null;
-    }
-  } catch {
-    return null;
-  }
-}
 
 function isMobileTelemetryRow(row: {
   user_agent: string | null;
@@ -202,7 +159,7 @@ function padDauSeries(
 export async function getMobileStats(
   days = 30,
 ): Promise<MobileStatsResult | { error: string }> {
-  const caller = await verifySuperAdmin();
+  const caller = await verifySuperAdminServer();
   if (!caller) return { error: "Unauthorized" };
 
   const admin = createAdminSupabaseClient();

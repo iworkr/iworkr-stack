@@ -1,3 +1,7 @@
+// @module lib/features/finance/screens/create_invoice_screen.dart
+// @status INCOMPLETE — PDF preview / Edge PDF pipeline (see INCOMPLETE: in build)
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

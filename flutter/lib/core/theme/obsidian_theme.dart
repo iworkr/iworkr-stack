@@ -1,3 +1,7 @@
+// @module lib/core/theme/obsidian_theme.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iworkr_mobile/core/theme/alabaster_theme.dart';

@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/profile/page.tsx
+ * @status STABLE
+ * @description Route — settings/profile
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState, useEffect, useRef } from "react";

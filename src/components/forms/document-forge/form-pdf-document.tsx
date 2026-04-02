@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/document-forge/form-pdf-document.tsx
+ * @status STABLE
+ * @description Forms & document forge — form-pdf-document
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";

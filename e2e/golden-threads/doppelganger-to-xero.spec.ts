@@ -1,3 +1,10 @@
+/**
+ * @module e2e/golden-threads/doppelganger-to-xero.spec.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { test, expect } from "@playwright/test";
 
 test.describe("Golden Thread — Doppelganger to Xero", () => {

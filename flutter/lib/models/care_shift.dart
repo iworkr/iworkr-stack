@@ -1,3 +1,7 @@
+// @module lib/models/care_shift.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// CareShift model — maps to public.shifts (Care mode) / schedule_blocks
 /// Project Nightingale: Field Operative — shift representation for support workers
 class CareShift {

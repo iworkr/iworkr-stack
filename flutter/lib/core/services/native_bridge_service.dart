@@ -1,3 +1,7 @@
+// @module lib/core/services/native_bridge_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 import 'dart:developer' as developer;
 

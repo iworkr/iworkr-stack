@@ -1,4 +1,7 @@
 /**
+ * @module e2e/terminus-dlq-enforcement.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Project Terminus — DLQ Enforcement Integration Test
  * ═══════════════════════════════════════════════════════════════════════════════
  * Verifies that malformed webhook payloads are correctly routed to the

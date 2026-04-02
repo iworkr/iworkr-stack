@@ -1,3 +1,7 @@
+// @module lib/models/iot_device.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// IoT Device — registered BLE sensor/probe.
 ///
 /// Mirrors Supabase `iot_devices` table.

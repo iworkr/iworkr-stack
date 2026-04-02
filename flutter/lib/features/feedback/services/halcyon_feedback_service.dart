@@ -1,3 +1,7 @@
+// @module lib/features/feedback/services/halcyon_feedback_service.dart
+// @status INCOMPLETE — app_version must come from package_info_plus (see TODO below)
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 import 'dart:io' show Platform;
 

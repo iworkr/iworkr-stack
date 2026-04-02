@@ -1,3 +1,7 @@
+// @module scripts/run-golden-thread-post-asserts.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Client } from "pg";

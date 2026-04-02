@@ -1,3 +1,7 @@
+// @module lib/features/routes/screens/flight_path_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 import 'dart:ui';
 

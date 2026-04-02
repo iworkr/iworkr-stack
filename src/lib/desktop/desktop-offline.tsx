@@ -1,3 +1,9 @@
+/**
+ * @module lib/desktop/desktop-offline.tsx
+ * @status STABLE
+ * @description Electron shell integration — desktop-offline
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState } from "react";

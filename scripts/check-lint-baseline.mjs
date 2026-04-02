@@ -1,3 +1,7 @@
+// @module scripts/check-lint-baseline.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";

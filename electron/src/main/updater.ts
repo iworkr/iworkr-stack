@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/updater.ts
+ * @status STABLE
+ * @description Electron shell — updater
+ * @lastReview 2026-03-28
+ */
 import { autoUpdater, UpdateCheckResult } from "electron-updater";
 import { BrowserWindow, ipcMain } from "electron";
 import log from "electron-log/main";

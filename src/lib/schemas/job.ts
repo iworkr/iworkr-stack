@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/job.ts
+ * @status STABLE
+ * @description Zod / shared schemas — job
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const JobStatusSchema = z.enum([

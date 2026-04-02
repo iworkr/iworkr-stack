@@ -1,3 +1,7 @@
+// @module lib/models/chat_message.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Chat message model — matches `messages` table.
 class ChatMessage {
   final String id;

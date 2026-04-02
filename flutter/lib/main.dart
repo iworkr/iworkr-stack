@@ -1,3 +1,7 @@
+// @module lib/main.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';

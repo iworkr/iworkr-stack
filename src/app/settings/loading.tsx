@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/settings
+ * @lastReview 2026-03-28
+ */
 export default function SettingsLoading() {
   return (
     <div className="h-full p-6">

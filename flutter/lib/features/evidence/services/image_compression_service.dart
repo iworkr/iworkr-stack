@@ -1,3 +1,7 @@
+// @module lib/features/evidence/services/image_compression_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:ui' as ui;
 

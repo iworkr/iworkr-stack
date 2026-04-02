@@ -25,7 +25,7 @@ import { useToastStore } from "./action-toast";
 import { useFinanceStore } from "@/lib/finance-store";
 import { useClientsStore } from "@/lib/clients-store";
 import { useAuthStore } from "@/lib/auth-store";
-import { useOrg } from "@/lib/hooks/use-org";
+import { useOrg, resolveWorkspaceOrgId } from "@/lib/hooks/use-org";
 import {
   type Client,
   type Invoice,
@@ -73,7 +73,7 @@ const AVATAR_COLORS = [
 ];
 
 const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID_REGEX.test(value);
@@ -128,7 +128,6 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
   const { orgId } = useOrg();
   const allClients = useClientsStore((s) => s.clients);
   const [saving, setSaving] = useState(false);
-  const hasValidOrgContext = isUuid(orgId);
 
   /* ── Derived ────────────────────────────────────────────── */
   const filteredClients = useMemo(
@@ -161,7 +160,8 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
   const dueDate = addDays(issueDate, paymentTerms.find((t) => t.value === terms)?.days || 7);
 
-  const isValid = !!selectedClient && lineItems.length > 0 && total > 0 && hasValidOrgContext;
+  const isValid = !!selectedClient && lineItems.length > 0 && total > 0;
+  const hasValidOrgContext = Boolean(orgId && isUuid(orgId));
 
   /* ── Reset on open ──────────────────────────────────────── */
   useEffect(() => {
@@ -232,17 +232,21 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
 
   /* ── Save / Send ────────────────────────────────────────── */
   async function handleSubmit(mode: "send" | "draft" | "link") {
-    if (!hasValidOrgContext) {
+    if (!isValid || saving) return;
+
+    let effectiveOrgId: string | null = isUuid(orgId) ? orgId : null;
+    if (!effectiveOrgId) {
+      effectiveOrgId = await resolveWorkspaceOrgId();
+    }
+    if (!isUuid(effectiveOrgId)) {
       addToast("Workspace context not loaded. Please refresh the page.");
       return;
     }
-    if (!isValid || saving) return;
 
-    // If org is available, persist to server
-    if (orgId) {
-      setSaving(true);
+    setSaving(true);
+    try {
       const result = await createInvoiceServer({
-        organization_id: orgId,
+        organization_id: effectiveOrgId,
         client_id: selectedClient!.id,
         client_name: selectedClient!.name,
         client_email: selectedClient!.email || null,
@@ -258,7 +262,6 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
           unit_price: li.rate,
         })),
       });
-      setSaving(false);
 
       if (!result.success) {
         addToast(`Error: ${result.error || "Failed to create invoice"}`);
@@ -279,14 +282,9 @@ export function CreateInvoiceModal({ open, onClose }: CreateInvoiceModalProps) {
       }
 
       setTimeout(() => onClose(), 400);
-      return;
+    } finally {
+      setSaving(false);
     }
-
-    // No org available — cannot persist invoice
-    console.error("Cannot create invoice: no organization context");
-    addToast("Workspace context not loaded. Please refresh the page.");
-    setSaving(false);
-    return;
   }
 
   /* ── Keys ───────────────────────────────────────────────── */

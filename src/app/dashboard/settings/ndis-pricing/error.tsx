@@ -1,3 +1,9 @@
+/**
+ * @error app/dashboard/settings/ndis-pricing/error.tsx
+ * @status STABLE
+ * @description Error boundary — app/dashboard/settings/ndis-pricing
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect } from "react";

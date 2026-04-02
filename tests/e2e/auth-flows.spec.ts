@@ -1,3 +1,9 @@
+/**
+ * @module tests/e2e/auth-flows.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
+ */
+
 import { test, expect } from "@playwright/test";
 
 const SEED_ORG_ID = "00000000-0000-0000-0000-000000000010";

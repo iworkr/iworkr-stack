@@ -1,4 +1,7 @@
 /**
+ * @module e2e/rbac-worker.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * RBAC Worker Role Tests
  *
  * Uses the `worker.json` storageState (qa-worker@iworkrapp.com / technician role).

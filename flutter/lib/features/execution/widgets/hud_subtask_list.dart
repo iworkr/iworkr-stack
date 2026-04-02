@@ -1,3 +1,7 @@
+// @module lib/features/execution/widgets/hud_subtask_list.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';

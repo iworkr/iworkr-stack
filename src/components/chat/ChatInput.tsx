@@ -1,3 +1,9 @@
+/**
+ * @component components/chat/ChatInput.tsx
+ * @status STABLE
+ * @description Messenger / chat UI — ChatInput
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";

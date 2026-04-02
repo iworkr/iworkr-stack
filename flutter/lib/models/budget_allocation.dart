@@ -1,3 +1,7 @@
+// @module lib/models/budget_allocation.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Budget Allocation model — maps to public.budget_allocations
 /// Project Nightingale Phase 3: NDIS budget quarantining & tracking
 class BudgetAllocation {

@@ -1,3 +1,9 @@
+/**
+ * @module lib/pdf/generate-invoice.ts
+ * @status STABLE
+ * @description PDF generation utilities — generate-invoice
+ * @lastReview 2026-03-28
+ */
 import jsPDF from "jspdf";
 import type { Invoice } from "@/lib/data";
 

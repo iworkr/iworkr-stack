@@ -1,3 +1,9 @@
+/**
+ * @module tests/e2e/golden-thread-care.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
+ */
+
 import { test, expect, type Page } from "@playwright/test";
 
 async function clickByTestIdOrText(page: Page, testId: string, textPattern: RegExp) {

@@ -1,3 +1,9 @@
+/**
+ * @page app/olympus/health/page.tsx
+ * @status STABLE
+ * @description Route — olympus/health
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

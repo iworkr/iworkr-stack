@@ -1,3 +1,7 @@
+// @module lib/features/care/screens/shift_debrief_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;

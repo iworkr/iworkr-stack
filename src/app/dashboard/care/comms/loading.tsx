@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/care/comms/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/care/comms
+ * @lastReview 2026-03-28
+ */
 export default function Loading() {
   return (
     <div className="flex h-full overflow-hidden bg-[var(--background)]">

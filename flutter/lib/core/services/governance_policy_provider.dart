@@ -1,3 +1,7 @@
+// @module lib/core/services/governance_policy_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 
 import 'package:device_info_plus/device_info_plus.dart';

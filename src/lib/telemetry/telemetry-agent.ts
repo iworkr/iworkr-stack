@@ -1,3 +1,9 @@
+/**
+ * @module lib/telemetry/telemetry-agent.ts
+ * @status STABLE
+ * @description Client telemetry / capture — telemetry-agent
+ * @lastReview 2026-03-28
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Project Argus-Panopticon — TelemetryAgent
@@ -34,7 +40,7 @@ interface AgentConfig {
 }
 
 let _config: AgentConfig | null = null;
-let _outbox: TelemetryEvent[] = [];
+const _outbox: TelemetryEvent[] = [];
 let _flushTimer: ReturnType<typeof setInterval> | null = null;
 let _workspaceId: string | null = null;
 let _userId: string | null = null;

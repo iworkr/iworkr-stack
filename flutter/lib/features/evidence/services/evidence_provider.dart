@@ -1,3 +1,7 @@
+// @module lib/features/evidence/services/evidence_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';

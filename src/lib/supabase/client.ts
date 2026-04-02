@@ -2,7 +2,8 @@
  * @module SupabaseClient
  * @status COMPLETE
  * @description Browser-side Supabase client singleton with Realtime channel helpers
- * @lastAudit 2026-03-22
+ * @risk P2 — localStorage parse failures ignored; workspace header may be stale until switchOrg.
+ * @lastAudit 2026-03-28
  */
 import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "./types";

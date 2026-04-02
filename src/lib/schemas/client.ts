@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/client.ts
+ * @status STABLE
+ * @description Zod / shared schemas — client
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const ClientStatusSchema = z.enum(["active", "lead", "churned", "inactive"]);

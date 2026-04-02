@@ -113,3 +113,45 @@ export function useOrg(): OrgData {
 export function clearOrgCache() {
   cachedOrg = null;
 }
+
+/** RFC 4122-style hex UUID (any version), avoids over-strict version-digit checks. */
+function isLikelyWorkspaceId(value: string | null | undefined): value is string {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  );
+}
+
+/**
+ * Resolve workspace org id when hooks are still hydrating (cold start, fast modal open).
+ * Order: auth store → module cache → first organization_members row for the user.
+ */
+export async function resolveWorkspaceOrgId(): Promise<string | null> {
+  const { currentOrg, user } = useAuthStore.getState();
+  if (isLikelyWorkspaceId(currentOrg?.id)) {
+    return currentOrg!.id;
+  }
+  if (cachedOrg && isLikelyWorkspaceId(cachedOrg.orgId)) {
+    return cachedOrg.orgId;
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user: sessionUser },
+  } = await supabase.auth.getUser();
+  const uid = sessionUser?.id ?? user?.id;
+  if (!uid) return null;
+
+  const { data: membership } = await (supabase as any)
+    .from("organization_members")
+    .select("organization_id")
+    .eq("user_id", uid)
+    .limit(1)
+    .maybeSingle();
+
+  const oid = membership?.organization_id ?? null;
+  if (oid) {
+    cachedOrg = { orgId: oid, userId: uid };
+  }
+  return oid;
+}

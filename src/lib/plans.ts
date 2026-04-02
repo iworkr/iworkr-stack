@@ -17,6 +17,9 @@ export interface PlanLimits {
   sso: boolean;
   prioritySupport: boolean;
   dedicatedManager: boolean;
+  /** Loom-Space feature gates */
+  siteBuilder: boolean;
+  customDomain: boolean;
   /** Phase 3/4 Care-specific feature gates */
   prodaClaiming: boolean;
   schadsEngine: boolean;
@@ -69,6 +72,8 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      siteBuilder: false,
+      customDomain: false,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,
@@ -110,6 +115,8 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      siteBuilder: true,
+      customDomain: false,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,
@@ -154,6 +161,8 @@ export const PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: true,
       dedicatedManager: false,
+      siteBuilder: true,
+      customDomain: true,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,
@@ -200,6 +209,8 @@ export const PLANS: PlanDefinition[] = [
       sso: true,
       prioritySupport: true,
       dedicatedManager: true,
+      siteBuilder: true,
+      customDomain: true,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,
@@ -249,6 +260,8 @@ export const CARE_PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: true,
       dedicatedManager: false,
+      siteBuilder: true,
+      customDomain: false,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,
@@ -295,6 +308,8 @@ export const CARE_PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: true,
       dedicatedManager: false,
+      siteBuilder: true,
+      customDomain: true,
       prodaClaiming: true,
       schadsEngine: true,
       auditDossier: true,
@@ -342,6 +357,8 @@ export const CARE_PLANS: PlanDefinition[] = [
       sso: false,
       prioritySupport: false,
       dedicatedManager: false,
+      siteBuilder: false,
+      customDomain: false,
       prodaClaiming: false,
       schadsEngine: false,
       auditDossier: false,

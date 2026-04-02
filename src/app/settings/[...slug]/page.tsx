@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/[...slug]/page.tsx
+ * @status STABLE
+ * @description Route — settings/[...slug]
+ * @lastReview 2026-03-28
+ */
 import { redirect } from "next/navigation";
 
 export default async function LegacySettingsBridge({

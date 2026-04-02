@@ -1,3 +1,7 @@
+// @module scripts/crucible_registry.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 import { z } from "zod";
 
 const uuid = z.string().uuid();

@@ -1,3 +1,9 @@
+/**
+ * @component components/layout/UserDropdown.tsx
+ * @status STABLE
+ * @description App shell layout — UserDropdown
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";

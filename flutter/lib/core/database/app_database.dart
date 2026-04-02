@@ -1,3 +1,7 @@
+// @module lib/core/database/app_database.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:io';
 
 import 'package:drift/drift.dart';

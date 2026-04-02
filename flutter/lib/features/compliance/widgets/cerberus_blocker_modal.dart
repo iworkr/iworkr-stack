@@ -1,3 +1,7 @@
+// @module lib/features/compliance/widgets/cerberus_blocker_modal.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';

@@ -1,3 +1,7 @@
+// @module lib/core/services/brand_cache_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:iworkr_mobile/core/theme/brand_theme.dart';

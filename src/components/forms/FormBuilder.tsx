@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/FormBuilder.tsx
+ * @status STABLE
+ * @description Forms & document forge — FormBuilder
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import {

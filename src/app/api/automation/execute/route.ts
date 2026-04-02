@@ -3,7 +3,8 @@
  * @status COMPLETE
  * @auth WEBHOOK — Service key required for external calls
  * @description Processes automation events from triggers, API, or cron
- * @lastAudit 2026-03-22
+ * @risk P1 — AUTOMATION_SECRET falls back to SUPABASE_SERVICE_ROLE_KEY when unset; bearer then matches service material — set AUTOMATION_SECRET in production.
+ * @lastAudit 2026-03-28
  */
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";

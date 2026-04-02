@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/common.ts
+ * @status STABLE
+ * @description Zod / shared schemas — common
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const UuidSchema = z.string().uuid();

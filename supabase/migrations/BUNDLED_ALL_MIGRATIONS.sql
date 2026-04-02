@@ -1,4 +1,7 @@
-
+-- @migration BUNDLED_ALL_MIGRATIONS.sql
+-- @status LEGACY — duplicate rollup of numbered migrations; P0 risk if applied after standalone files (see launch audit §1)
+-- @lastReview 2026-03-28
+--
 -- ============================================================
 -- File: 001_extensions.sql
 -- ============================================================

@@ -1,3 +1,7 @@
+// @module lib/models/site_scan.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Site Scan — a visual walkthrough recon session.
 ///
 /// Mirrors Supabase `site_scans` table.

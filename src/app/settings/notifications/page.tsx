@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/notifications/page.tsx
+ * @status STABLE
+ * @description Route — settings/notifications
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";

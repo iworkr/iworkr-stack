@@ -1,3 +1,9 @@
+/**
+ * @component components/ui/status-pill.test.tsx
+ * @status STABLE
+ * @description Shared UI — status-pill.test
+ * @lastReview 2026-03-28
+ */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { StatusPill, formatStatus } from "./status-pill";

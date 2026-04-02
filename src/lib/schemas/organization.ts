@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/organization.ts
+ * @status STABLE
+ * @description Zod / shared schemas — organization
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const IndustrySectorSchema = z.enum([

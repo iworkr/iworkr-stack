@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/finance/oracle-triage/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/finance/oracle-triage
+ * @lastReview 2026-03-28
+ */
 export default function OracleTriageLoading() {
   return (
     <div className="flex flex-col h-full bg-[#050505]">

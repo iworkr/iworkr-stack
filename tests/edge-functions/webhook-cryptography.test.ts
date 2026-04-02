@@ -1,3 +1,9 @@
+/**
+ * @module tests/edge-functions/webhook-cryptography.test.ts
+ * @status TEST
+ * @lastReview 2026-03-28
+ */
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import crypto from "crypto";
 
@@ -29,7 +35,7 @@ function handleXeroWebhook(
   body: string,
   signature: string | undefined,
   webhookSecret: string
-): { status: number; body: any } {
+): { status: number; body: Record<string, unknown> } {
   if (!signature) {
     return { status: 401, body: { error: "Missing signature" } };
   }

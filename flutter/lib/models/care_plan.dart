@@ -1,3 +1,7 @@
+// @module lib/models/care_plan.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Care Plan model — maps to public.care_plans
 /// Project Nightingale Phase 4: Structured care planning with review cycles
 class CarePlan {

@@ -1,4 +1,10 @@
 /**
+ * @module lib/automation/engine.ts
+ * @status STABLE
+ * @description Automation engine — dispatch, events, executors — engine
+ * @lastReview 2026-03-28
+ */
+/**
  * iWorkr Automation Engine
  *
  * Processes automation events by:

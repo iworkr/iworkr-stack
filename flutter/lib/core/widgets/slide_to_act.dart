@@ -1,3 +1,7 @@
+// @module lib/core/widgets/slide_to_act.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';

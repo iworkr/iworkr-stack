@@ -1,3 +1,7 @@
+// @module lib/features/feedback/widgets/sentiment_sieve_sheet.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:iworkr_mobile/core/theme/brand_theme.dart';
 import 'package:iworkr_mobile/features/feedback/services/halcyon_feedback_service.dart';

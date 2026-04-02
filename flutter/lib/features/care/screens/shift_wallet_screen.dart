@@ -1,3 +1,7 @@
+// @module lib/features/care/screens/shift_wallet_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';

@@ -1,3 +1,7 @@
+// @module lib/models/sentinel_alert.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Sentinel Alert model — maps to public.sentinel_alerts
 /// Project Nightingale Phase 4: Automated risk detection
 class SentinelAlert {

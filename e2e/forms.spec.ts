@@ -1,4 +1,7 @@
 /**
+ * @module e2e/forms.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Forms Module — Post-PRD E2E Audit
  * ============================================================

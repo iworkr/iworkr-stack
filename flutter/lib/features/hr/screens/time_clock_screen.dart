@@ -1,3 +1,7 @@
+// @module lib/features/hr/screens/time_clock_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';

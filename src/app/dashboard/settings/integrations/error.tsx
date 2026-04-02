@@ -1,3 +1,9 @@
+/**
+ * @error app/dashboard/settings/integrations/error.tsx
+ * @status STABLE
+ * @description Error boundary — app/dashboard/settings/integrations
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect } from "react";

@@ -1,3 +1,7 @@
+// @module lib/core/services/map_launcher_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';

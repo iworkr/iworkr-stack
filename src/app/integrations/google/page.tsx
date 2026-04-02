@@ -1,3 +1,9 @@
+/**
+ * @page app/integrations/google/page.tsx
+ * @status STABLE
+ * @description Route — integrations/google
+ * @lastReview 2026-03-28
+ */
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Calendar, Shield, Trash2, Lock } from "lucide-react";

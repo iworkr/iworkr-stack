@@ -1,3 +1,10 @@
+/**
+ * @module e2e/aegis/e2e-playwright-matrix.spec.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { test, expect, type Page } from "@playwright/test";
 import { hardenDeterminism, waitForApiResponse } from "../utils/aegis-helpers";
 

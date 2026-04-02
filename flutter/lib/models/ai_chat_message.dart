@@ -1,3 +1,7 @@
+// @module lib/models/ai_chat_message.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// AI Chat Message model — mirrors Supabase `ai_chat_messages` table.
 class AiChatMessage {
   final String id;

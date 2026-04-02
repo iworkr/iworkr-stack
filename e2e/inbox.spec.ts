@@ -1,4 +1,7 @@
 /**
+ * @module e2e/inbox.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Inbox Module — Comprehensive E2E Audit
  * ============================================================
@@ -1003,7 +1006,7 @@ test.describe("Inbox Module Audit", () => {
 
     const now = new Date().toISOString();
 
-    let md = `# Inbox Module — Comprehensive Audit Report (Post-PRD)
+    const md = `# Inbox Module — Comprehensive Audit Report (Post-PRD)
 
 > **Generated**: ${now}
 > **Module**: Inbox (\`/dashboard/inbox\`)

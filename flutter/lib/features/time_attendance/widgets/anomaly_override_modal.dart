@@ -1,3 +1,7 @@
+// @module lib/features/time_attendance/widgets/anomaly_override_modal.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

@@ -1,3 +1,9 @@
+/**
+ * @component components/chat/ChatAttachmentMenu.tsx
+ * @status STABLE
+ * @description Messenger / chat UI — ChatAttachmentMenu
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useRef } from "react";

@@ -1,3 +1,7 @@
+// @module lib/core/widgets/auth_curtain.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:io';
 import 'dart:math';
 import 'dart:ui';

@@ -1,3 +1,7 @@
+// @module lib/core/services/route_navigation_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 

@@ -1,4 +1,10 @@
 /**
+ * @module scripts/screenshot-all.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
+/**
  * Comprehensive Screenshot Script — Every Page, Both Industries
  * 
  * Takes full-page screenshots of every dashboard page, landing page,

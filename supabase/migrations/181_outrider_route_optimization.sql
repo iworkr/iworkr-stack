@@ -1,4 +1,9 @@
 -- ============================================================================
+-- @migration 181_outrider_route_optimization.sql
+-- @status STABLE
+-- @description Outrider route optimization — schedule blocks, RPCs, PostGIS
+-- @lastReview 2026-03-28
+-- ============================================================================
 -- Migration 181: Project Outrider-Route — AI Route Optimization & TSP Engine
 -- ============================================================================
 -- Adds:

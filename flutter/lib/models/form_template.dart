@@ -1,3 +1,7 @@
+// @module lib/models/form_template.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Form template — JSON-driven compliance form definition.
 /// Mirrors Supabase `form_templates` table.
 class FormTemplate {

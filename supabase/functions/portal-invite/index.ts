@@ -1,3 +1,9 @@
+/**
+ * @module supabase/functions/portal-invite/index.ts
+ * @status STABLE
+ * @description Supabase Edge Function (Deno)
+ * @lastReview 2026-03-28
+ */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 

@@ -37,7 +37,7 @@ export async function GET(
   // Query BOTH id AND secure_token — prevents IDOR via UUID guessing
   const { data: invoice, error: invError } = await (supabase as any)
     .from("invoices")
-    .select("id, display_id, client_name, client_email, subtotal, tax_rate, tax, total, status, due_date, notes, payment_link, organization_id, secure_token")
+    .select("id, display_id, client_name, client_email, subtotal, tax_rate, tax, total, status, due_date, notes, payment_link, organization_id, secure_token, blocks_json, editor_version")
     .eq("id", invoiceId)
     .eq("secure_token", token)
     .is("deleted_at", null)
@@ -110,5 +110,7 @@ export async function GET(
     org_id: invoice.organization_id,
     notes: invoice.notes,
     payment_link: invoice.payment_link,
+    blocks_json: invoice.blocks_json || null,
+    editor_version: invoice.editor_version || 1,
   });
 }

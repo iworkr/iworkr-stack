@@ -1,3 +1,9 @@
+/**
+ * @page app/olympus/aegis/triage/page.tsx
+ * @status STABLE
+ * @description Route — olympus/aegis/triage
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 /* ═══════════════════════════════════════════════════════════════════

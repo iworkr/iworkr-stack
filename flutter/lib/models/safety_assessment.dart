@@ -1,3 +1,7 @@
+// @module lib/models/safety_assessment.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Safety Assessment model — mirrors Supabase `safety_assessments` table.
 ///
 /// Represents a mandatory risk assessment that blocks job start.

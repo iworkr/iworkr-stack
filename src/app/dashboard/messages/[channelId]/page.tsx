@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/messages/[channelId]/page.tsx
+ * @status STABLE
+ * @description Route — dashboard/messages/[channelId]
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useParams } from "next/navigation";

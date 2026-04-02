@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/automations/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/automations
+ * @lastReview 2026-03-28
+ */
 export default function Loading() {
   return (
     <div className="p-6 space-y-6">

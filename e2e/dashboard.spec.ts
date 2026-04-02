@@ -1,4 +1,7 @@
 /**
+ * @module e2e/dashboard.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Dashboard Module — Comprehensive E2E Audit
  * ============================================================
@@ -1364,7 +1367,7 @@ test.describe("Dashboard Module Audit", () => {
 
     const now = new Date().toISOString();
 
-    let md = `# Dashboard Module — Audit Report
+    const md = `# Dashboard Module — Audit Report
 
 > **Generated**: ${now}
 > **Module**: Dashboard (\`/dashboard\`)

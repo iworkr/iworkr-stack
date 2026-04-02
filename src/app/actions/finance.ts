@@ -14,6 +14,7 @@ import { revalidatePath } from "next/cache";
 import { Events, dispatch } from "@/lib/automation";
 import { createInvoiceSchema, validate } from "@/lib/validation";
 import { logger } from "@/lib/logger";
+import { sendInvoiceSentEmail } from "@/lib/email/events";
 
 const UpdateInvoiceSchema = z.object({
   client_id: z.string().uuid().optional().nullable(),
@@ -1043,5 +1044,60 @@ export async function runOverdueWatchdog(orgId?: string) {
     return { data: rpcData, error: null };
   } catch (error: any) {
     return { data: null, error: error.message || "Failed to run overdue watchdog" };
+  }
+}
+
+/**
+ * Send invoice email to client via Resend
+ */
+export async function dispatchInvoiceEmail(params: {
+  invoiceId: string;
+  displayId: string;
+  clientEmail: string;
+  clientName: string;
+  orgName: string;
+  orgLogo?: string;
+  issueDate: string;
+  dueDate: string;
+  lineItems: { description: string; quantity: number; rate: number; total: number }[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paymentUrl: string;
+  currency?: string;
+}) {
+  try {
+    if (!params.clientEmail) {
+      return { error: "Client email is required to send invoice" };
+    }
+
+    await sendInvoiceSentEmail({
+      to: params.clientEmail,
+      recipientName: params.clientName,
+      companyName: params.orgName,
+      companyLogo: params.orgLogo,
+      invoiceNumber: params.displayId,
+      invoiceDate: params.issueDate,
+      dueDate: params.dueDate,
+      projectName: "",
+      lineItems: params.lineItems,
+      subtotal: params.subtotal,
+      tax: params.tax,
+      total: params.total,
+      paymentUrl: params.paymentUrl,
+      currency: params.currency || "AUD",
+    });
+
+    logger.info("Invoice email dispatched", "finance", {
+      invoiceId: params.invoiceId,
+      to: params.clientEmail,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    logger.error("Failed to dispatch invoice email", "finance", error instanceof Error ? error : undefined, {
+      invoiceId: params.invoiceId,
+    });
+    return { error: error.message || "Failed to send email" };
   }
 }

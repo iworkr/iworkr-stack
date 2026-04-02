@@ -1,3 +1,7 @@
+// @module lib/models/participant_medication.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Participant medication model — maps to public.participant_medications
 /// Project Nightingale → Project Asclepius: Advanced eMAR & Clinical Pharmacology
 class ParticipantMedication {

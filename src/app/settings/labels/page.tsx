@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/labels/page.tsx
+ * @status STABLE
+ * @description Route — settings/labels
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Plus } from "lucide-react";

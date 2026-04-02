@@ -1,3 +1,10 @@
+/**
+ * @module electron/main
+ * @status STABLE
+ * @description Main process — window, tray, IPC, deep link protocol, remote web shell (PROD_URL/DEV_URL).
+ * @risk P2 — Dev mode: electron-store may be unencrypted when safeStorage unavailable; tokens on disk easier to read than packaged builds.
+ * @lastReview 2026-03-28
+ */
 import { app, BrowserWindow, safeStorage, session } from "electron";
 import path from "path";
 import log from "electron-log/main";

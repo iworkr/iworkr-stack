@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/analytics/chat/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/analytics/chat
+ * @lastReview 2026-03-28
+ */
 export default function PanopticonChatLoading() {
   return (
     <div className="flex h-[calc(100vh-3.5rem)] bg-[#050505]">

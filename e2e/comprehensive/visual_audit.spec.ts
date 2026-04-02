@@ -1,4 +1,7 @@
 /**
+ * @module e2e/comprehensive/visual_audit.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Project Panopticon — Obsidian Visual Audit
  * Top 10 screens: snapshot with < 1% pixel diff from golden baseline.
  */

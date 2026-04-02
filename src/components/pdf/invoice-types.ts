@@ -1,4 +1,10 @@
 /**
+ * @module components/pdf/invoice-types.ts
+ * @status STABLE
+ * @description PDF invoice types — invoice-types
+ * @lastReview 2026-03-28
+ */
+/**
  * Shared types for the isomorphic invoice PDF template.
  * Used by both the web <PDFViewer> and the server-side generation.
  */

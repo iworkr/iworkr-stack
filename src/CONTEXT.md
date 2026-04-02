@@ -111,3 +111,8 @@ See: `docs/DECISIONS_LOG.md`
 | Settings | `/settings/*` | `settings.ts` | `profile/`, `organization/` |
 | Help | `/dashboard/help` | `help.ts` | `knowledge/` |
 | Onboarding | `/setup` | `onboarding.ts` | `onboarding/` |
+
+## Launch & audit navigation
+- **Master index:** `audit-reports/INDEX-MASTER-AUDIT-2026-03-28.md` — links launch audit, incompletions, domain audits, verification commands.
+- **Launch blockers (P0–P3):** `audit-reports/FULL-PROJECT-LAUNCH-AUDIT-2026-03-27.md`
+- **Explicit gaps / INCOMPLETE trails:** `audit-reports/CODE-REVIEW-INCOMPLETIONS-2026-03-28.md`

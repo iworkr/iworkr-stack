@@ -486,7 +486,9 @@ export async function releaseRetention(
       reference_type: "commercial_contract",
       description: `Retention ${releaseType === "50_percent" ? "50%" : "final"} release`,
       created_by: user.id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}).catch(() => {
+      /* INCOMPLETE: finance_ledger_entries insert failed — audit trail missing; add logger + alert (P2) */
+    });
 
     revalidatePath("/dashboard/finance/retention");
     return { ok: true, error: null };

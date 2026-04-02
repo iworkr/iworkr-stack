@@ -1,4 +1,10 @@
 /**
+ * @page app/dashboard/settings/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/settings
+ * @lastReview 2026-03-28
+ */
+/**
  * Dashboard Settings Loading Skeleton (Project Aegis-Resolution)
  *
  * Shimmer skeleton displayed during route transitions within

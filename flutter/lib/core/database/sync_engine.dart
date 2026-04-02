@@ -1,3 +1,7 @@
+// @module lib/core/database/sync_engine.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';

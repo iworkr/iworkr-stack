@@ -731,7 +731,7 @@ export default function RolesPage() {
           >
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             <span className="text-xs text-rose-400 font-semibold">
-              IMPERSONATION MODE — Viewing as "{roles.find((r) => r.id === impersonateRoleId)?.name}"
+              IMPERSONATION MODE — Viewing as &ldquo;{roles.find((r) => r.id === impersonateRoleId)?.name}&rdquo;
             </span>
             <button
               onClick={exitImpersonation}
@@ -1433,7 +1433,7 @@ export default function RolesPage() {
                 {!impersonating && (
                   <div className="flex flex-col items-center justify-center py-16 text-zinc-600">
                     <Eye size={40} className="mb-3 opacity-20" />
-                    <p className="text-sm">Select a role and click "View As This Role"</p>
+                    <p className="text-sm">Select a role and click &ldquo;View As This Role&rdquo;</p>
                     <p className="text-xs text-zinc-700 mt-1">
                       This is a read-only preview — no changes are made to live sessions.
                     </p>

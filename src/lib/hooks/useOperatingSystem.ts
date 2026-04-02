@@ -1,3 +1,9 @@
+/**
+ * @module lib/hooks/useOperatingSystem.ts
+ * @status STABLE
+ * @description Shared React hooks — useOperatingSystem
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState } from "react";

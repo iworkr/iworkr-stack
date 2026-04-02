@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/tray.ts
+ * @status STABLE
+ * @description Electron shell — tray
+ * @lastReview 2026-03-28
+ */
 import { Tray, Menu, BrowserWindow, app, nativeImage } from "electron";
 import path from "path";
 import log from "electron-log/main";

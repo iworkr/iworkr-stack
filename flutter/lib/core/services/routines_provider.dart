@@ -1,3 +1,7 @@
+// @module lib/core/services/routines_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'dart:typed_data';
 

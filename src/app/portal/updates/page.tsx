@@ -1,3 +1,9 @@
+/**
+ * @page app/portal/updates/page.tsx
+ * @status STABLE
+ * @description Route — portal/updates
+ * @lastReview 2026-03-28
+ */
 import { getGlasshouseDailyUpdates, type DailyUpdate } from "@/app/actions/glasshouse";
 import { FamilyPortalShell } from "@/components/portal/family-portal-shell";
 import { createServerSupabaseClient } from "@/lib/supabase/server";

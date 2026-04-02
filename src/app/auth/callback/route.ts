@@ -1,3 +1,9 @@
+/**
+ * @route app/auth/callback/route.ts
+ * @status STABLE
+ * @description HTTP handler — auth/callback
+ * @lastReview 2026-03-28
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";

@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/chaos/temporal-payroll.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Argus-Tartarus: Temporal Physics — Cross-Midnight & DST Payroll Tests
  *
  * Tests that the SCHADS Award payroll engine correctly:

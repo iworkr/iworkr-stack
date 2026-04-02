@@ -1,3 +1,9 @@
+/**
+ * @module components/dashboard/lottie-data.ts
+ * @status STABLE
+ * @description Dashboard Lottie data — lottie-data
+ * @lastReview 2026-03-28
+ */
 export const successCheckAnimation = {
   v: "5.7.4",
   fr: 60,

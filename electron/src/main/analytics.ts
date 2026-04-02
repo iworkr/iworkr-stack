@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/analytics.ts
+ * @status STABLE
+ * @description Electron shell — analytics
+ * @lastReview 2026-03-28
+ */
 import { app, ipcMain } from "electron";
 import log from "electron-log/main";
 

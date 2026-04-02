@@ -1,3 +1,7 @@
+// @module lib/models/chat_poll.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Poll model — matches `polls` table.
 class ChatPoll {
   final String id;

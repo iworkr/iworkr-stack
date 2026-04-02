@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/dispatch/live/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/dashboard/dispatch/live
+ * @lastReview 2026-03-28
+ */
 export default function DispatchLiveLoading() {
   return (
     <div className="flex h-full bg-[#050505]">

@@ -1,6 +1,6 @@
 # Team & RBAC Module — Post-PRD Audit Report
 
-> **Generated**: 2026-03-25T15:41:47.678Z
+> **Generated**: 2026-03-26T07:34:00.457Z
 > **Module**: Team & RBAC (`/dashboard/team`, `/dashboard/team/roles`)
 > **Test Framework**: Playwright (16 test suites)
 > **Total Findings**: 0

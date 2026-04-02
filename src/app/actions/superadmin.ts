@@ -10,6 +10,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { verifySuperAdminServer as verifySuperAdmin } from "@/lib/super-admin-server";
 
 /* ═══════════════════════════════════════════════════════════════════
    Project Olympus — Super Admin Server Actions
@@ -31,45 +32,6 @@ function err(msg: string) {
 
 function ok(data: any) {
   return { data, error: null };
-}
-
-/** Verify the calling user is a super admin. Returns user or null. */
-async function verifySuperAdmin() {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const admin = createAdminSupabaseClient();
-    const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
-
-    try {
-      const { data: profile, error: profileError } = await admin
-        .from("profiles")
-        .select("id, email, is_super_admin")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-          return { id: user.id, email: user.email || "" };
-        }
-        return null;
-      }
-
-      if (profile?.is_super_admin || SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
-        return { id: user.id, email: profile?.email || user.email || "" };
-      }
-      return null;
-    } catch {
-      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-        return { id: user.id, email: user.email || "" };
-      }
-      return null;
-    }
-  } catch {
-    return null;
-  }
 }
 
 /** Log an action to the immutable audit trail */

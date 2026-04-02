@@ -1,3 +1,7 @@
+// @module lib/features/automotive/services/automotive_bridge_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';

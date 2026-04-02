@@ -1,3 +1,7 @@
+// @module lib/core/widgets/obsidian_map.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

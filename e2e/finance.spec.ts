@@ -1,4 +1,7 @@
 /**
+ * @module e2e/finance.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Finance Module — Post-PRD E2E Audit
  * ============================================================

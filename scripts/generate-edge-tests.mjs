@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+// @module scripts/generate-edge-tests.mjs
+// @status STABLE
+// @lastReview 2026-03-28
+
 /**
  * Argus-Tartarus: Edge Function Test Auto-Generator
  *

@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/outrider-autonomous.ts
+ * @status STABLE
+ * @description Zod / shared schemas — outrider-autonomous
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 /* ── Enums ────────────────────────────────────────────── */

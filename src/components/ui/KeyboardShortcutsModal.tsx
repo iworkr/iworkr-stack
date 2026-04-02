@@ -1,3 +1,9 @@
+/**
+ * @component components/ui/KeyboardShortcutsModal.tsx
+ * @status STABLE
+ * @description Shared UI — KeyboardShortcutsModal
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Keyboard } from "lucide-react";

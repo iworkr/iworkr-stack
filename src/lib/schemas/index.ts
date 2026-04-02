@@ -1,4 +1,10 @@
 /**
+ * @module lib/schemas/index.ts
+ * @status STABLE
+ * @description Zod / shared schemas — index
+ * @lastReview 2026-03-28
+ */
+/**
  * Aegis-Refactor: Central Zod Schema Library
  *
  * Runtime validation schemas for all data entering the application from

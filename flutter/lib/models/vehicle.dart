@@ -1,3 +1,7 @@
+// @module lib/models/vehicle.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Vehicle — fleet registry entry.
 ///
 /// Mirrors Supabase `vehicles` table.

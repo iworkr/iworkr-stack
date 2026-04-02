@@ -30,6 +30,7 @@ import {
   Shield,
   Hash,
   ArrowRight,
+  Globe,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useShellStore } from "@/lib/shell-store";
@@ -49,6 +50,7 @@ const commands = [
   { id: "nav-inbox", label: "Go to Messages", icon: Inbox, shortcut: "G I", group: "Navigation", href: "/dashboard/inbox" },
   { id: "nav-settings", label: "Go to Settings", icon: Settings, shortcut: "⌘,", group: "Navigation", href: "/settings" },
   { id: "nav-communications", label: "Communications Settings", icon: Settings, group: "Navigation", href: "/dashboard/settings/communications" },
+  { id: "nav-website", label: "Go to Website", icon: Globe, shortcut: "G W", group: "Navigation", href: "/dashboard/website" },
 
   // ── Navigation: Trades ──
   { id: "nav-jobs", label: "Go to Jobs", icon: Briefcase, shortcut: "G J", group: "Navigation", href: "/dashboard/jobs" },
@@ -90,7 +92,7 @@ const commands = [
   { id: "nav-auditor", label: "Go to Auditor Portals", icon: Shield, group: "Governance", href: "/dashboard/compliance/audits" },
 
   // ── Navigation: Workspace ──
-  { id: "nav-automations", label: "Go to Automations", icon: Workflow, shortcut: "G W", group: "Navigation", href: "/dashboard/automations" },
+  { id: "nav-automations", label: "Go to Automations", icon: Workflow, group: "Navigation", href: "/dashboard/automations" },
   { id: "nav-integrations", label: "Go to Integrations", icon: Plug, group: "Navigation", href: "/dashboard/integrations" },
   { id: "nav-ai-agent", label: "Go to AI Agent", icon: Bot, group: "Navigation", href: "/dashboard/ai-agent" },
 ];

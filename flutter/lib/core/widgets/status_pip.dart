@@ -1,3 +1,7 @@
+// @module lib/core/widgets/status_pip.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:iworkr_mobile/core/theme/obsidian_theme.dart';

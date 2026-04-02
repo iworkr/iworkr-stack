@@ -1,3 +1,7 @@
+// @module lib/features/finance/screens/mobile_po_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================
 // Mobile PO Generator & Receipt Capture
 // Project Aegis-Spend — The 10-Second "Counter Strike"

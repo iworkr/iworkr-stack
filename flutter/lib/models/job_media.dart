@@ -1,3 +1,7 @@
+// @module lib/models/job_media.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Job Media — evidence locker record for photos/attachments.
 ///
 /// Mirrors Supabase `job_media` table. Photos are watermarked with

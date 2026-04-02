@@ -56,6 +56,7 @@ import {
   RefreshCw,
   Phone,
   Route,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -191,6 +192,9 @@ const CARE_NAV: NavGroup[] = [
     ],
   },
 
+  // ── Website ──
+  { id: "nav_website", label: "Website", icon: Globe, href: "/dashboard/website", shortcut: "G W" },
+
   // ── Pillar 6: Governance ──
   {
     id: "grp_governance",
@@ -259,6 +263,7 @@ const TRADES_NAV: NavGroup[] = [
   },
   { id: "nav_inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox", shortcut: "G I" },
   { id: "nav_comms", label: "Communications", icon: Phone, href: "/dashboard/communications", shortcut: "G C" },
+  { id: "nav_website", label: "Website", icon: Globe, href: "/dashboard/website", shortcut: "G W" },
   {
     id: "grp_ops",
     label: "Operations",

@@ -1,4 +1,10 @@
 /**
+ * @module lib/automation/events.ts
+ * @status STABLE
+ * @description Automation engine — dispatch, events, executors — events
+ * @lastReview 2026-03-28
+ */
+/**
  * iWorkr Automation Event System
  *
  * Defines all domain events that can trigger automation flows.

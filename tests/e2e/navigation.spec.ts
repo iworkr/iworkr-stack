@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/navigation.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Core Navigation Matrix — Argus-Omniscience
  *
  * Replaces TestSprite proxy-based crawling with native Playwright tests.

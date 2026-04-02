@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/receipt-ocr.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the receipt-ocr edge function.
  *
  * Run with:

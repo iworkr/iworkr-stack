@@ -1,3 +1,7 @@
+// @module lib/core/services/forms_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iworkr_mobile/core/services/auth_provider.dart';
 import 'package:iworkr_mobile/core/services/supabase_service.dart';

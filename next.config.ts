@@ -1,3 +1,9 @@
+/**
+ * @module next.config.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -44,7 +50,7 @@ const nextConfig: NextConfig = {
               `img-src 'self' blob: data: https://*.supabase.co${isDev ? " http://127.0.0.1:*" : ""} https://api.mapbox.com https://*.mapbox.com https://*.stripe.com https://lh3.googleusercontent.com https://*.googleusercontent.com https://*.polar.sh`,
               "font-src 'self' https://fonts.gstatic.com",
               `connect-src 'self' https://*.supabase.co wss://*.supabase.co${isDev ? " http://127.0.0.1:* ws://127.0.0.1:*" : ""} https://api.resend.com https://api.mapbox.com https://*.mapbox.com https://events.mapbox.com https://api.stripe.com https://maps.googleapis.com https://api.polar.sh https://api.revenuecat.com`,
-              "frame-src 'self' https://accounts.google.com https://js.stripe.com https://*.stripe.com https://polar.sh https://*.polar.sh",
+              "frame-src 'self' blob: https://accounts.google.com https://js.stripe.com https://*.stripe.com https://polar.sh https://*.polar.sh",
               "worker-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",

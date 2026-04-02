@@ -1,3 +1,7 @@
+// @module lib/core/services/background_sync_service.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';

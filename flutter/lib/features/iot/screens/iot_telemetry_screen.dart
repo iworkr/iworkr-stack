@@ -1,3 +1,7 @@
+// @module lib/features/iot/screens/iot_telemetry_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

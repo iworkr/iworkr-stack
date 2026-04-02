@@ -1,3 +1,7 @@
+// @module lib/features/evidence/widgets/markup_editor.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 // ============================================================================
 // Evidence Markup Editor — Full-featured image annotation canvas
 // ============================================================================

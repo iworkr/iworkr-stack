@@ -99,8 +99,8 @@ export async function evaluateShiftCost(
 
   // Fallback to organization_members hourly_rate if no staff profile
   let baseRate = staff ? parseFloat(staff.base_hourly_rate) : 0;
-  let employmentType = staff?.employment_type || "casual";
-  let schadsLevel = staff?.schads_level || "2.1";
+  const employmentType = staff?.employment_type || "casual";
+  const schadsLevel = staff?.schads_level || "2.1";
   const maxWeeklyHours = staff?.max_weekly_hours || 38;
 
   if (!baseRate) {

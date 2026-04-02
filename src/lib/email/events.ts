@@ -1,3 +1,9 @@
+/**
+ * @module lib/email/events.ts
+ * @status STABLE
+ * @description Transactional email helpers — events
+ * @lastReview 2026-03-28
+ */
 import { sendEmail } from "./send";
 import WelcomeEmail from "@/emails/welcome";
 import InviteEmail from "@/emails/invite";

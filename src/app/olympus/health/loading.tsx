@@ -1,3 +1,9 @@
+/**
+ * @page app/olympus/health/loading.tsx
+ * @status STABLE
+ * @description Loading UI — app/olympus/health
+ * @lastReview 2026-03-28
+ */
 /* ═══════════════════════════════════════════════════════════════════
    Project Panopticon — /olympus/health Loading Skeleton
    Terminal-aesthetic shimmer matching Obsidian Absolute design

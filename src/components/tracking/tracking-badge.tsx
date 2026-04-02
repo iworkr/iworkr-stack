@@ -1,3 +1,9 @@
+/**
+ * @component components/tracking/tracking-badge.tsx
+ * @status STABLE
+ * @description Tracking UI — tracking-badge
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState } from "react";

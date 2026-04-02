@@ -1,3 +1,9 @@
+/**
+ * @page app/auth/auth-error/page.tsx
+ * @status STABLE
+ * @description Route — auth/auth-error
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Suspense } from "react";

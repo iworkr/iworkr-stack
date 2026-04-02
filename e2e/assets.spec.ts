@@ -1,4 +1,7 @@
 /**
+ * @module e2e/assets.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Assets Module — Post-PRD E2E Audit
  * ============================================================

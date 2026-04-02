@@ -1,3 +1,10 @@
+/**
+ * @module e2e/pages/dashboard-page.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { type Page, expect } from "@playwright/test";
 import { BasePage } from "./base-page";
 import { logger } from "../utils/logger";

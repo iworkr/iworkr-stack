@@ -1,3 +1,9 @@
+/**
+ * @module lib/desktop/use-desktop.ts
+ * @status STABLE
+ * @description Electron shell integration — use-desktop
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";

@@ -1,3 +1,7 @@
+// @module lib/models/notification_item.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// NotificationItem model — maps to public.notifications
 class NotificationItem {
   final String id;

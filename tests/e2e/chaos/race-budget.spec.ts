@@ -1,4 +1,7 @@
 /**
+ * @module tests/e2e/chaos/race-budget.spec.ts
+ * @status TEST
+ * @lastReview 2026-03-28
  * Argus-Tartarus: Concurrency Race Condition — NDIS Budget Double-Spend Attack
  *
  * The Vulnerability: A participant has $X left in their NDIS budget.

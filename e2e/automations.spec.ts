@@ -1,4 +1,7 @@
 /**
+ * @module e2e/automations.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * iWorkr Automations Module — Post-PRD Verification E2E
  * ============================================================
@@ -62,8 +65,9 @@ test.describe("Automations Module — Post-PRD Audit (16 suites)", () => {
     await goTo(page);
     const btn = page.locator('button:has-text("New Flow")').or(page.locator('button:has-text("Create First Flow")'));
     if (await btn.first().isVisible().catch(() => false)) {
-      const hasOnClick = await btn.first().evaluate(el => {
-        const listeners = (el as any).__reactFiber$;
+      const hasOnClick = await btn.first().evaluate((el) => {
+        const node = el as HTMLElement & { __reactFiber$?: unknown };
+        void node.__reactFiber$;
         return !!el.getAttribute("disabled") || el.getAttribute("disabled") === null;
       }).catch(() => false);
 

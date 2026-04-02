@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/panopticon-chat.ts
+ * @status STABLE
+ * @description Zod / shared schemas — panopticon-chat
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const ChartTypeSchema = z.enum([

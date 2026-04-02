@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/main/ipc.ts
+ * @status STABLE
+ * @description Electron shell — ipc
+ * @lastReview 2026-03-28
+ */
 import { ipcMain, BrowserWindow, app, Notification, nativeImage } from "electron";
 import path from "path";
 import log from "electron-log/main";

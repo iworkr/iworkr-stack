@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/workflow/page.tsx
+ * @status STABLE
+ * @description Route — settings/workflow
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { Toggle, SettingRow, SettingSection, Select } from "@/components/settings/settings-toggle";

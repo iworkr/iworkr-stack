@@ -1,4 +1,7 @@
 /**
+ * @module e2e/settings.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ============================================================
  * Settings Module — Comprehensive E2E Tests
  * ============================================================

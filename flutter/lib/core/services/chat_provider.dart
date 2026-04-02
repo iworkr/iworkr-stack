@@ -1,3 +1,7 @@
+// @module lib/core/services/chat_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

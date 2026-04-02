@@ -1,3 +1,9 @@
+/**
+ * @module scripts/crucible/types.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
+ */
+
 export interface SeedContext {
   workspace_id: string;
   admin_user_id: string;

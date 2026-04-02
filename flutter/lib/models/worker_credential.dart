@@ -1,3 +1,7 @@
+// @module lib/models/worker_credential.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Worker credential model — maps to public.worker_credentials
 /// Project Nightingale: Workforce compliance tracking
 class WorkerCredential {

@@ -1,3 +1,7 @@
+// @module lib/features/automotive/screens/safe_driving_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

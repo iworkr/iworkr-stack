@@ -1,3 +1,9 @@
+/**
+ * @page app/dashboard/settings/[...slug]/page.tsx
+ * @status STABLE
+ * @description Route — dashboard/settings/[...slug]
+ * @lastReview 2026-03-28
+ */
 import { redirect } from "next/navigation";
 
 export default async function DashboardSettingsLegacyFallback({

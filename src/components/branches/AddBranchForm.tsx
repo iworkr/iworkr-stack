@@ -1,3 +1,9 @@
+/**
+ * @component components/branches/AddBranchForm.tsx
+ * @status STABLE
+ * @description Branch management UI — AddBranchForm
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useMemo } from "react";

@@ -1,3 +1,7 @@
+// @module lib/models/van_stock.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Van Stock Item — per-user inventory tracking.
 ///
 /// Mirrors Supabase `van_stock` joined with `inventory_items`.

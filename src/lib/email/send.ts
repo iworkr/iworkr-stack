@@ -1,3 +1,9 @@
+/**
+ * @module lib/email/send.ts
+ * @status STABLE
+ * @description Transactional email helpers — send
+ * @lastReview 2026-03-28
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Resend } from "resend";
 import type { ReactElement } from "react";

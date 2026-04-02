@@ -1,3 +1,9 @@
+/**
+ * @module lib/desktop/desktop-update-indicator.tsx
+ * @status STABLE
+ * @description Electron shell integration — desktop-update-indicator
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useEffect, useState } from "react";

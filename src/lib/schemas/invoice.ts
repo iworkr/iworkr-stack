@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/invoice.ts
+ * @status STABLE
+ * @description Zod / shared schemas — invoice
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 export const InvoiceStatusSchema = z.enum(["draft", "sent", "paid", "overdue", "voided"]);

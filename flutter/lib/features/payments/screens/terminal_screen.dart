@@ -1,3 +1,7 @@
+// @module lib/features/payments/screens/terminal_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

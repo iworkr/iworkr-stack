@@ -1,3 +1,7 @@
+// @module lib/models/incident.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Incident model — maps to public.incidents
 /// Project Nightingale: Clinical safety incident reporting
 class Incident {

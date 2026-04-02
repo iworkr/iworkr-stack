@@ -1,3 +1,10 @@
+/**
+ * @module e2e/aegis-dlq.spec.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { expect, test } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 

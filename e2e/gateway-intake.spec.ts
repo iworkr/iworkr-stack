@@ -1,3 +1,10 @@
+/**
+ * @module e2e/gateway-intake.spec.ts
+ * @status STABLE
+ * @description Playwright E2E
+ * @lastReview 2026-03-28
+ */
+
 import { expect, test } from "@playwright/test";
 
 test.describe("Project Gateway - Intake CRM", () => {

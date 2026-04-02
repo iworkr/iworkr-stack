@@ -1,3 +1,7 @@
+// @module lib/features/ai/screens/ai_cortex_screen.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';

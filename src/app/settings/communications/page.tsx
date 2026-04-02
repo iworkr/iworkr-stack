@@ -1,3 +1,9 @@
+/**
+ * @page app/settings/communications/page.tsx
+ * @status STABLE
+ * @description Route — settings/communications
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";

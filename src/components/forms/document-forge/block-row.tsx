@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/document-forge/block-row.tsx
+ * @status STABLE
+ * @description Forms & document forge — block-row
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useSortable } from "@dnd-kit/sortable";

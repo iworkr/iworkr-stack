@@ -1,3 +1,7 @@
+// @module lib/models/market_benchmark.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Market benchmark — precomputed pricing statistics for a service category + region.
 class MarketBenchmark {
   final String id;

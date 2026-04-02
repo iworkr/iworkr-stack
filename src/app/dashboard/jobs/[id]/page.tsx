@@ -114,7 +114,7 @@ export default function JobDetailPage() {
 
   const jobId = params.id as string;
 
-  const { jobs, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
+  const { jobs, loaded, loading, updateJobServer, deleteJobServer, restoreJobs, toggleSubtaskServer } = useJobsStore();
   const { addToast } = useToastStore();
   const teamMembers = useTeamStore((s) => s.members);
   const assigneeOptions = teamMembers.length > 0
@@ -233,7 +233,29 @@ export default function JobDetailPage() {
     }
   }
 
-  /* ── Not found ──────────────────────────────────────────── */
+  /* ── Loading / Not found ─────────────────────────────────── */
+
+  if (!job && (!loaded || loading)) {
+    return (
+      <div className="flex h-full items-center justify-center bg-[var(--background)]">
+        <div className="pointer-events-none absolute inset-0 bg-noise opacity-[0.012]" />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative z-10 text-center"
+        >
+          <div className="relative mx-auto mb-5 flex h-16 w-16 items-center justify-center">
+            <div className="absolute inset-0 rounded-full border border-white/[0.04] animate-signal-pulse" />
+            <div className="absolute inset-2 rounded-full border border-white/[0.03] animate-signal-pulse" style={{ animationDelay: "0.5s" }} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02]">
+              <Briefcase size={18} strokeWidth={1.5} className="text-zinc-600 animate-pulse" />
+            </div>
+          </div>
+          <p className="text-[13px] text-zinc-500">Loading {t("job")}…</p>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!job) {
     return (

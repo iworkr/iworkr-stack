@@ -1,3 +1,7 @@
+// @module lib/features/chat/widgets/message_bubble.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';

@@ -983,7 +983,7 @@ export default function SchedulePage() {
                               return false;
                             })();
 
-                            let blockLeft = hourToX(block.startHour);
+                            const blockLeft = hourToX(block.startHour);
                             let blockWidth = block.duration * HOUR_W;
 
                             if (isDragging && dragState) {

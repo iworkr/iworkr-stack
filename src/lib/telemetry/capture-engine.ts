@@ -1,3 +1,9 @@
+/**
+ * @module lib/telemetry/capture-engine.ts
+ * @status STABLE
+ * @description Client telemetry / capture — capture-engine
+ * @lastReview 2026-03-28
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Project Panopticon — Client-Side Capture Engine (The "Black Box")

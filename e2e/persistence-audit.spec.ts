@@ -1,4 +1,7 @@
 /**
+ * @module e2e/persistence-audit.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * ================================================================
  * iWorkr — Cross-Module Persistence Audit
  * ================================================================

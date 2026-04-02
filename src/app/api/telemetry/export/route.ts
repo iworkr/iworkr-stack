@@ -7,48 +7,8 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { verifySuperAdminServer } from "@/lib/super-admin-server";
 import { listSystemTelemetry } from "@/app/actions/system-telemetry";
-
-async function verifySuperAdmin() {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const SUPER_ADMIN_EMAILS = ["theo@iworkrapp.com"];
-  const admin = createAdminSupabaseClient();
-
-  try {
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .select("id, email, is_super_admin")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-        return { id: user.id, email: user.email || "" };
-      }
-      return null;
-    }
-
-    if (!profile?.is_super_admin) {
-      if (SUPER_ADMIN_EMAILS.includes(profile?.email || user.email || "")) {
-        return { id: user.id, email: profile?.email || user.email || "" };
-      }
-      return null;
-    }
-    return { id: user.id, email: profile.email };
-  } catch {
-    if (SUPER_ADMIN_EMAILS.includes(user.email || "")) {
-      return { id: user.id, email: user.email || "" };
-    }
-    return null;
-  }
-}
 
 function escapeCsvCell(v: unknown): string {
   const s = v == null ? "" : String(v);
@@ -57,7 +17,7 @@ function escapeCsvCell(v: unknown): string {
 }
 
 export async function GET(req: NextRequest) {
-  const caller = await verifySuperAdmin();
+  const caller = await verifySuperAdminServer();
   if (!caller) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

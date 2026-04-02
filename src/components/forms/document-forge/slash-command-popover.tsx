@@ -1,3 +1,9 @@
+/**
+ * @component components/forms/document-forge/slash-command-popover.tsx
+ * @status STABLE
+ * @description Forms & document forge — slash-command-popover
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";

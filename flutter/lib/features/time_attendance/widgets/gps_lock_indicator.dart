@@ -1,3 +1,7 @@
+// @module lib/features/time_attendance/widgets/gps_lock_indicator.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';

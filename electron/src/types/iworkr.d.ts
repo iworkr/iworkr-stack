@@ -1,3 +1,9 @@
+/**
+ * @module electron/src/types/iworkr.d.ts
+ * @status STABLE
+ * @description Electron shell — iworkr.d
+ * @lastReview 2026-03-28
+ */
 export interface IWorkrAPI {
   badge: {
     update: (count: number) => void;

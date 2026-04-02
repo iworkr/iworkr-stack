@@ -1,3 +1,9 @@
+/**
+ * @page app/olympus/system/dlq/page.tsx
+ * @status STABLE
+ * @description Route — olympus/system/dlq
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";

@@ -1,4 +1,7 @@
 /**
+ * @module e2e/comprehensive/crud_master.spec.ts
+ * @status STABLE
+ * @lastReview 2026-03-28
  * Project Panopticon — CRUD Hammers
  * Full lifecycle (Create, Read, Update, Delete) for Jobs, Clients, Assets, Forms.
  * Qase: each step mapped for traceability.

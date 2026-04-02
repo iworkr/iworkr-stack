@@ -1,3 +1,9 @@
+/**
+ * @module components/maps/static-map-url.ts
+ * @status STABLE
+ * @description Maps helpers — static-map-url
+ * @lastReview 2026-03-28
+ */
 import { MAPBOX_ACCESS_TOKEN } from "./mapbox-provider";
 
 /**

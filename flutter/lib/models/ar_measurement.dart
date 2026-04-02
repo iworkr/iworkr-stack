@@ -1,3 +1,7 @@
+// @module lib/models/ar_measurement.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// AR Measurement — saved spatial measurement.
 ///
 /// Mirrors Supabase `ar_measurements` table.

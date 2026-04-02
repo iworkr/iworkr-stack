@@ -1,3 +1,9 @@
+/**
+ * @module lib/schemas/hermes-scribe.ts
+ * @status STABLE
+ * @description Zod / shared schemas — hermes-scribe
+ * @lastReview 2026-03-28
+ */
 import { z } from "zod";
 
 /* ── OpenAI Function Calling Tool Schemas ────────────── */

@@ -384,7 +384,7 @@ export async function simulatePayroll(
   debugLog.push(`▸ Evaluating ${rules.length} active rule(s)…`);
   debugLog.push("");
 
-  let appliedMultipliers: { name: string; value: number; category: string; stacking: string }[] = [];
+  const appliedMultipliers: { name: string; value: number; category: string; stacking: string }[] = [];
 
   for (const rule of rules) {
     debugLog.push(`── Rule: "${rule.name}" (priority ${rule.priority_weight}) ──`);

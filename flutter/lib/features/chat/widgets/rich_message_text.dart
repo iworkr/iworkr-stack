@@ -1,3 +1,7 @@
+// @module lib/features/chat/widgets/rich_message_text.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

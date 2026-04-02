@@ -17,7 +17,9 @@ import { createElement } from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { InvoiceDocument } from "@/components/pdf/invoice-document";
+import { BlockInvoiceDocument } from "@/components/finance/editor/pdf-compiler";
 import type { InvoiceData, WorkspaceBrand } from "@/components/pdf/invoice-types";
+import type { InvoiceBlock, GlobalSettings } from "@/components/finance/editor/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -113,46 +115,88 @@ async function fetchInvoicePayload(
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
-    let invoiceData: InvoiceData;
-    let workspaceData: WorkspaceBrand;
+    let pdfBuffer: Buffer;
+    let displayId = "Invoice";
+    let invoiceIdForStorage: string | undefined;
 
-    if (body.invoice_id) {
+    // Moneta-Canvas v2: block-based rendering
+    if (body.blocks && body.workspace) {
+      const blocks = body.blocks as InvoiceBlock[];
+      const settings = (body.globalSettings || {
+        brandColor: "#10B981",
+        fontFamily: "Inter",
+        currency: "AUD",
+        taxInclusive: false,
+        taxRate: 10,
+        discountType: null,
+        discountValue: 0,
+      }) as GlobalSettings;
+      const workspace = body.workspace as WorkspaceBrand;
+      const metaBlock = blocks.find((b) => b.type === "meta");
+      if (metaBlock) displayId = (metaBlock.content as any).displayId || displayId;
+
+      const element = createElement(BlockInvoiceDocument, { blocks, settings, workspace });
+      pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+    }
+    // Legacy v1: full data + workspace payload
+    else if (body.data && body.workspace) {
+      const invoiceData = body.data as InvoiceData;
+      const workspaceData = body.workspace as WorkspaceBrand;
+      displayId = invoiceData.display_id;
+      const element = createElement(InvoiceDocument, { data: invoiceData, workspace: workspaceData });
+      pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+    }
+    // Legacy: fetch by invoice_id
+    else if (body.invoice_id) {
+      invoiceIdForStorage = body.invoice_id;
+      const supabase = await createServerSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       const payload = await fetchInvoicePayload(body.invoice_id);
       if (!payload) {
-        return NextResponse.json(
-          { error: "Invoice not found" },
-          { status: 404 },
-        );
+        return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
       }
-      invoiceData = payload.data;
-      workspaceData = payload.workspace;
-    } else if (body.data && body.workspace) {
-      invoiceData = body.data;
-      workspaceData = body.workspace;
+      displayId = payload.data.display_id;
+
+      // Check if invoice has v2 blocks
+      const supabase2 = (await createServerSupabaseClient()) as any;
+      const { data: inv } = await supabase2
+        .from("invoices")
+        .select("blocks_json, editor_version")
+        .eq("id", body.invoice_id)
+        .single();
+
+      if (inv?.editor_version === 2 && inv?.blocks_json) {
+        const blocks = inv.blocks_json as InvoiceBlock[];
+        const settings: GlobalSettings = {
+          brandColor: payload.workspace.brand_color_hex || "#10B981",
+          fontFamily: "Inter",
+          currency: "AUD",
+          taxInclusive: false,
+          taxRate: Number(payload.data.tax_rate) || 10,
+          discountType: payload.data.discount_type,
+          discountValue: payload.data.discount_value,
+        };
+        const element = createElement(BlockInvoiceDocument, { blocks, settings, workspace: payload.workspace });
+        pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+      } else {
+        const element = createElement(InvoiceDocument, { data: payload.data, workspace: payload.workspace });
+        pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+      }
     } else {
       return NextResponse.json(
-        { error: "Provide invoice_id or {data, workspace}" },
+        { error: "Provide invoice_id, {data, workspace}, or {blocks, workspace}" },
         { status: 400 },
       );
     }
 
-    const element = createElement(InvoiceDocument, {
-      data: invoiceData,
-      workspace: workspaceData,
-    });
-    // InvoiceDocument renders <Document> at root; renderToBuffer expects DocumentProps at type level
-    const pdfBuffer = await renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
-
-    if (body.save_to_storage && body.invoice_id) {
+    if (body.save_to_storage && (body.invoice_id || invoiceIdForStorage)) {
+      const targetId = body.invoice_id || invoiceIdForStorage;
       const supabase = (await createServerSupabaseClient()) as any;
-      const storagePath = `${invoiceData.display_id.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
+      const storagePath = `${displayId.replace(/[^a-zA-Z0-9-]/g, "_")}.pdf`;
 
       await supabase.storage
         .from("invoices")
@@ -168,12 +212,11 @@ export async function POST(request: NextRequest) {
       await supabase
         .from("invoices")
         .update({ pdf_url: publicUrl })
-        .eq("id", body.invoice_id);
+        .eq("id", targetId);
 
       return NextResponse.json({ url: publicUrl });
     }
 
-    // NextResponse expects BodyInit; Node Buffer isn't in the type def. Use Uint8Array.
     const pdfBody = new Uint8Array(
       typeof pdfBuffer === "object" && "length" in pdfBuffer
         ? (pdfBuffer as ArrayLike<number>)
@@ -182,7 +225,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse(pdfBody, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${invoiceData.display_id}.pdf"`,
+        "Content-Disposition": `inline; filename="${displayId}.pdf"`,
       },
     });
   } catch (err: any) {

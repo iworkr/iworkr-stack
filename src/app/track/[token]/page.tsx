@@ -1,3 +1,9 @@
+/**
+ * @page app/track/[token]/page.tsx
+ * @status STABLE
+ * @description Route — track/[token]
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

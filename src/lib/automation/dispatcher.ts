@@ -1,4 +1,10 @@
 /**
+ * @module lib/automation/dispatcher.ts
+ * @status STABLE
+ * @description Automation engine — dispatch, events, executors — dispatcher
+ * @lastReview 2026-03-28
+ */
+/**
  * iWorkr Event Dispatcher
  *
  * Fire-and-forget event dispatcher that sends events to the automation engine.

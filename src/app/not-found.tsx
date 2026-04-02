@@ -1,3 +1,9 @@
+/**
+ * @page app/not-found.tsx
+ * @status STABLE
+ * @description 404 Not Found page
+ * @lastReview 2026-03-28
+ */
 "use client";
 
 import { motion } from "framer-motion";

@@ -521,6 +521,15 @@ export const useFinanceStore = create<FinanceState>()(
     }),
     {
       name: "iworkr-finance",
+      version: 2,
+      migrate: () => ({
+        invoices: [],
+        payouts: [],
+        dailyRevenue: [],
+        overview: null,
+        orgId: null,
+        _lastFetchedAt: null,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state && state.invoices && state.invoices.length > 0) {
           state.loaded = true;

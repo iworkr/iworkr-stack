@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/sentinel-scan.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the sentinel-scan edge function.
  * Tests automated risk detection in progress notes and health data.
  *

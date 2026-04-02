@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// @module scripts/generate-aegis-audit.mjs
+// @status STABLE
+// @lastReview 2026-03-28
 
 /**
  * Aegis-Chaos Audit Report Generator

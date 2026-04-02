@@ -189,7 +189,7 @@ function WhoIsComingCard({ shift }: { shift: BudgetTelemetry["next_shift"] }) {
       </div>
       {shift.public_note && (
         <p className="text-[11px] text-zinc-500 italic mt-2 border-t border-white/5 pt-2">
-          "{shift.public_note}"
+          &ldquo;{shift.public_note}&rdquo;
         </p>
       )}
     </motion.div>

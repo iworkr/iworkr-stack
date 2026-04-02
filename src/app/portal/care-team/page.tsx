@@ -1,3 +1,9 @@
+/**
+ * @page app/portal/care-team/page.tsx
+ * @status STABLE
+ * @description Route — portal/care-team
+ * @lastReview 2026-03-28
+ */
 import { getPortalCareTeam, getPortalDocuments } from "@/app/actions/portal-family";
 import { FamilyPortalShell } from "@/components/portal/family-portal-shell";
 import { PortalSignDocumentButton } from "@/components/portal/portal-sign-document-button";

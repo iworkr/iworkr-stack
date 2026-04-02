@@ -1,3 +1,7 @@
+// @module lib/features/dashboard/widgets/financial_pulse_widget.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'dart:math';
 
 import 'package:flutter/material.dart';

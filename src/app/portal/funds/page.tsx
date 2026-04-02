@@ -1,3 +1,9 @@
+/**
+ * @page app/portal/funds/page.tsx
+ * @status STABLE
+ * @description Route — portal/funds
+ * @lastReview 2026-03-28
+ */
 import { getPortalFunds } from "@/app/actions/portal-family";
 import { FamilyPortalShell } from "@/components/portal/family-portal-shell";
 

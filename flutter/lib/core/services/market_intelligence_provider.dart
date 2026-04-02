@@ -1,3 +1,7 @@
+// @module lib/core/services/market_intelligence_provider.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:iworkr_mobile/models/market_benchmark.dart';

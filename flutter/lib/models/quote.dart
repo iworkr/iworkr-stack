@@ -1,3 +1,7 @@
+// @module lib/models/quote.dart
+// @status STABLE
+// @lastReview 2026-03-28
+
 /// Quote model — mirrors Supabase `quotes` table.
 class Quote {
   final String id;

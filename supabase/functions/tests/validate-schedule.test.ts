@@ -1,4 +1,10 @@
 /**
+ * @module supabase/functions/tests/validate-schedule.test.ts
+ * @status TEST
+ * @description Vitest/Deno edge function test
+ * @lastReview 2026-03-28
+ */
+/**
  * Native Deno tests for the validate-schedule edge function.
  * Tests scheduling hard gate — credential checks, fatigue rules, qualification matching.
  *
